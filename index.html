@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TierMaker - 创建你的分级列表</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .controls {
+            padding: 30px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .upload-section {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        .upload-btn {
+            background: linear-gradient(135deg, #4ecdc4, #44a08d);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(78, 205, 196, 0.3);
+        }
+
+        .upload-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(78, 205, 196, 0.4);
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #f093fb, #f5576c);
+            color: white;
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #4facfe, #00f2fe);
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        .tier-container {
+            padding: 30px;
+        }
+
+        .tier-row {
+            display: flex;
+            margin-bottom: 10px;
+            min-height: 120px;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+        }
+
+        .tier-row:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(0,0,0,0.15);
+        }
+
+        .tier-label {
+            width: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.2rem;
+            color: white;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+        }
+
+        .tier-s { background: linear-gradient(135deg, #ff6b6b, #ee5a24); }
+        .tier-a { background: linear-gradient(135deg, #ffa726, #ff7043); }
+        .tier-b { background: linear-gradient(135deg, #ffeb3b, #ffc107); color: #333 !important; text-shadow: none !important; }
+        .tier-c { background: linear-gradient(135deg, #66bb6a, #43a047); }
+        .tier-d { background: linear-gradient(135deg, #42a5f5, #1976d2); }
+        .tier-f { background: linear-gradient(135deg, #ab47bc, #7b1fa2); }
+
+        .tier-content {
+            flex: 1;
+            background: white;
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            gap: 15px;
+            flex-wrap: wrap;
+            min-height: 120px;
+        }
+
+        .tier-item {
+            width: 80px;
+            height: 80px;
+            border-radius: 10px;
+            overflow: hidden;
+            cursor: grab;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            position: relative;
+        }
+
+        .tier-item:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+        }
+
+        .tier-item:active {
+            cursor: grabbing;
+        }
+
+        .tier-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .tier-item .remove-btn {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: #ff4757;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            font-size: 12px;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .tier-item:hover .remove-btn {
+            display: flex;
+        }
+
+        .drop-zone {
+            border: 2px dashed #ddd;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            color: #666;
+            transition: all 0.3s ease;
+            margin-top: 20px;
+        }
+
+        .drop-zone.drag-over {
+            border-color: #4ecdc4;
+            background: rgba(78, 205, 196, 0.1);
+        }
+
+        .unassigned-items {
+            margin-top: 30px;
+        }
+
+        .unassigned-title {
+            font-size: 1.3rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .unassigned-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+            gap: 15px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 15px;
+            min-height: 120px;
+        }
+
+        .dragging {
+            opacity: 0.5;
+            transform: rotate(5deg);
+        }
+
+        .tier-content.drag-over {
+            background: rgba(78, 205, 196, 0.1);
+            border: 2px dashed #4ecdc4;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .upload-section {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .tier-label {
+                width: 60px;
+                font-size: 1rem;
+            }
+            
+            .tier-item {
+                width: 60px;
+                height: 60px;
+            }
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #4ecdc4;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎯 TierMaker</h1>
+            <p>创建你的专属分级列表 - 拖拽图片到不同等级</p>
+        </div>
+
+        <div class="controls">
+            <div class="upload-section">
+                <button class="upload-btn" onclick="document.getElementById('fileInput').click()">
+                    📁 上传图片
+                </button>
+                <input type="file" id="fileInput" class="file-input" multiple accept="image/*">
+                <span id="fileCount">已上传 0 张图片</span>
+            </div>
+            
+            <div class="action-buttons">
+                <button class="btn btn-primary" onclick="exportTierList()">📊 导出分级图</button>
+                <button class="btn btn-secondary" onclick="clearAll()">🗑️ 清空所有</button>
+                <button class="btn btn-success" onclick="addSampleImages()">🎲 添加示例图片</button>
+            </div>
+        </div>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>正在处理图片...</p>
+        </div>
+
+        <div class="tier-container">
+            <div class="tier-row" data-tier="s">
+                <div class="tier-label tier-s">S</div>
+                <div class="tier-content" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+            </div>
+            
+            <div class="tier-row" data-tier="a">
+                <div class="tier-label tier-a">A</div>
+                <div class="tier-content" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+            </div>
+            
+            <div class="tier-row" data-tier="b">
+                <div class="tier-label tier-b">B</div>
+                <div class="tier-content" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+            </div>
+            
+            <div class="tier-row" data-tier="c">
+                <div class="tier-label tier-c">C</div>
+                <div class="tier-content" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+            </div>
+            
+            <div class="tier-row" data-tier="d">
+                <div class="tier-label tier-d">D</div>
+                <div class="tier-content" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+            </div>
+            
+            <div class="tier-row" data-tier="f">
+                <div class="tier-label tier-f">F</div>
+                <div class="tier-content" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+            </div>
+        </div>
+
+        <div class="unassigned-items">
+            <div class="unassigned-title">📦 未分级图片</div>
+            <div class="unassigned-grid" id="unassignedGrid" ondrop="drop(event)" ondragover="allowDrop(event)">
+                <div class="drop-zone">
+                    拖拽图片到这里开始分级，或点击上方按钮上传图片
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 全局变量
+        let imageCounter = 0;
+        let tierData = {
+            s: [],
+            a: [],
+            b: [],
+            c: [],
+            d: [],
+            f: [],
+            unassigned: []
+        };
+
+        // 页面加载时恢复数据
+        document.addEventListener('DOMContentLoaded', function() {
+            loadFromLocalStorage();
+            setupEventListeners();
+        });
+
+        // 设置事件监听器
+        function setupEventListeners() {
+            const fileInput = document.getElementById('fileInput');
+            fileInput.addEventListener('change', handleFileUpload);
+            
+            // 拖拽上传
+            const dropZone = document.querySelector('.unassigned-grid');
+            dropZone.addEventListener('dragover', handleDragOver);
+            dropZone.addEventListener('drop', handleFileDrop);
+            dropZone.addEventListener('dragenter', handleDragEnter);
+            dropZone.addEventListener('dragleave', handleDragLeave);
+        }
+
+        // 处理文件上传
+        function handleFileUpload(event) {
+            const files = Array.from(event.target.files);
+            processFiles(files);
+        }
+
+        // 处理拖拽上传
+        function handleFileDrop(event) {
+            event.preventDefault();
+            const files = Array.from(event.dataTransfer.files);
+            processFiles(files);
+        }
+
+        function handleDragOver(event) {
+            event.preventDefault();
+        }
+
+        function handleDragEnter(event) {
+            event.preventDefault();
+            event.currentTarget.classList.add('drag-over');
+        }
+
+        function handleDragLeave(event) {
+            event.currentTarget.classList.remove('drag-over');
+        }
+
+        // 处理文件
+        function processFiles(files) {
+            const imageFiles = files.filter(file => file.type.startsWith('image/'));
+            
+            if (imageFiles.length === 0) {
+                alert('请选择图片文件！');
+                return;
+            }
+
+            showLoading(true);
+            
+            imageFiles.forEach((file, index) => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const imageData = {
+                        id: 'img_' + Date.now() + '_' + index,
+                        src: e.target.result,
+                        name: file.name
+                    };
+                    
+                    tierData.unassigned.push(imageData);
+                    createTierItem(imageData, 'unassigned');
+                    
+                    if (index === imageFiles.length - 1) {
+                        showLoading(false);
+                        updateFileCount();
+                        saveToLocalStorage();
+                    }
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // 创建分级项目
+        function createTierItem(imageData, tier) {
+            const item = document.createElement('div');
+            item.className = 'tier-item';
+            item.draggable = true;
+            item.dataset.id = imageData.id;
+            item.dataset.tier = tier;
+            
+            item.innerHTML = `
+                <img src="${imageData.src}" alt="${imageData.name}">
+                <button class="remove-btn" onclick="removeItem('${imageData.id}')">×</button>
+            `;
+            
+            item.addEventListener('dragstart', handleDragStart);
+            item.addEventListener('dragend', handleDragEnd);
+            
+            if (tier === 'unassigned') {
+                const unassignedGrid = document.getElementById('unassignedGrid');
+                const dropZone = unassignedGrid.querySelector('.drop-zone');
+                if (dropZone) {
+                    dropZone.remove();
+                }
+                unassignedGrid.appendChild(item);
+            } else {
+                const tierContent = document.querySelector(`[data-tier="${tier}"] .tier-content`);
+                tierContent.appendChild(item);
+            }
+        }
+
+        // 拖拽开始
+        function handleDragStart(event) {
+            event.dataTransfer.setData('text/plain', event.target.dataset.id);
+            event.target.classList.add('dragging');
+        }
+
+        // 拖拽结束
+        function handleDragEnd(event) {
+            event.target.classList.remove('dragging');
+        }
+
+        // 允许放置
+        function allowDrop(event) {
+            event.preventDefault();
+            event.currentTarget.classList.add('drag-over');
+        }
+
+        // 放置
+        function drop(event) {
+            event.preventDefault();
+            event.currentTarget.classList.remove('drag-over');
+            
+            const itemId = event.dataTransfer.getData('text/plain');
+            const item = document.querySelector(`[data-id="${itemId}"]`);
+            
+            if (!item) return;
+            
+            const targetTier = event.currentTarget.closest('[data-tier]')?.dataset.tier || 'unassigned';
+            const currentTier = item.dataset.tier;
+            
+            // 更新数据结构
+            moveItemToTier(itemId, currentTier, targetTier);
+            
+            // 更新DOM
+            if (targetTier === 'unassigned') {
+                const unassignedGrid = document.getElementById('unassignedGrid');
+                const dropZone = unassignedGrid.querySelector('.drop-zone');
+                if (dropZone) {
+                    dropZone.remove();
+                }
+                unassignedGrid.appendChild(item);
+            } else {
+                event.currentTarget.appendChild(item);
+            }
+            
+            item.dataset.tier = targetTier;
+            saveToLocalStorage();
+        }
+
+        // 移动项目到指定等级
+        function moveItemToTier(itemId, fromTier, toTier) {
+            const itemIndex = tierData[fromTier].findIndex(item => item.id === itemId);
+            if (itemIndex === -1) return;
+            
+            const item = tierData[fromTier].splice(itemIndex, 1)[0];
+            tierData[toTier].push(item);
+        }
+
+        // 移除项目
+        function removeItem(itemId) {
+            const item = document.querySelector(`[data-id="${itemId}"]`);
+            const tier = item.dataset.tier;
+            
+            // 从数据结构中移除
+            const itemIndex = tierData[tier].findIndex(item => item.id === itemId);
+            if (itemIndex !== -1) {
+                tierData[tier].splice(itemIndex, 1);
+            }
+            
+            // 从DOM中移除
+            item.remove();
+            
+            // 如果未分级区域为空，显示提示
+            if (tier === 'unassigned' && tierData.unassigned.length === 0) {
+                const unassignedGrid = document.getElementById('unassignedGrid');
+                const dropZone = document.createElement('div');
+                dropZone.className = 'drop-zone';
+                dropZone.textContent = '拖拽图片到这里开始分级，或点击上方按钮上传图片';
+                unassignedGrid.appendChild(dropZone);
+            }
+            
+            updateFileCount();
+            saveToLocalStorage();
+        }
+
+        // 更新文件计数
+        function updateFileCount() {
+            const totalImages = Object.values(tierData).reduce((sum, arr) => sum + arr.length, 0);
+            document.getElementById('fileCount').textContent = `已上传 ${totalImages} 张图片`;
+        }
+
+        // 显示/隐藏加载状态
+        function showLoading(show) {
+            document.getElementById('loading').style.display = show ? 'block' : 'none';
+        }
+
+        // 添加示例图片
+        function addSampleImages() {
+            const sampleImages = [
+                'https://via.placeholder.com/80x80/ff6b6b/ffffff?text=1',
+                'https://via.placeholder.com/80x80/4ecdc4/ffffff?text=2',
+                'https://via.placeholder.com/80x80/45b7d1/ffffff?text=3',
+                'https://via.placeholder.com/80x80/f9ca24/ffffff?text=4',
+                'https://via.placeholder.com/80x80/6c5ce7/ffffff?text=5',
+                'https://via.placeholder.com/80x80/a29bfe/ffffff?text=6'
+            ];
+            
+            sampleImages.forEach((src, index) => {
+                const imageData = {
+                    id: 'sample_' + Date.now() + '_' + index,
+                    src: src,
+                    name: `示例图片 ${index + 1}`
+                };
+                
+                tierData.unassigned.push(imageData);
+                createTierItem(imageData, 'unassigned');
+            });
+            
+            updateFileCount();
+            saveToLocalStorage();
+        }
+
+        // 清空所有
+        function clearAll() {
+            if (confirm('确定要清空所有图片吗？')) {
+                tierData = {
+                    s: [],
+                    a: [],
+                    b: [],
+                    c: [],
+                    d: [],
+                    f: [],
+                    unassigned: []
+                };
+                
+                // 清空DOM
+                document.querySelectorAll('.tier-content').forEach(content => {
+                    content.innerHTML = '';
+                });
+                
+                const unassignedGrid = document.getElementById('unassignedGrid');
+                unassignedGrid.innerHTML = '<div class="drop-zone">拖拽图片到这里开始分级，或点击上方按钮上传图片</div>';
+                
+                updateFileCount();
+                saveToLocalStorage();
+            }
+        }
+
+        // 导出分级图
+        function exportTierList() {
+            // 使用html2canvas库导出图片
+            if (typeof html2canvas === 'undefined') {
+                // 动态加载html2canvas
+                const script = document.createElement('script');
+                script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+                script.onload = () => exportTierList();
+                document.head.appendChild(script);
+                return;
+            }
+            
+            const container = document.querySelector('.tier-container');
+            html2canvas(container, {
+                backgroundColor: '#ffffff',
+                scale: 2,
+                useCORS: true
+            }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = 'tier-list.png';
+                link.href = canvas.toDataURL();
+                link.click();
+            });
+        }
+
+        // 保存到本地存储
+        function saveToLocalStorage() {
+            try {
+                localStorage.setItem('tierMakerData', JSON.stringify(tierData));
+            } catch (e) {
+                console.warn('无法保存到本地存储:', e);
+            }
+        }
+
+        // 从本地存储加载
+        function loadFromLocalStorage() {
+            try {
+                const saved = localStorage.getItem('tierMakerData');
+                if (saved) {
+                    tierData = JSON.parse(saved);
+                    renderTierData();
+                    updateFileCount();
+                }
+            } catch (e) {
+                console.warn('无法从本地存储加载数据:', e);
+            }
+        }
+
+        // 渲染分级数据
+        function renderTierData() {
+            // 清空现有内容
+            document.querySelectorAll('.tier-content').forEach(content => {
+                content.innerHTML = '';
+            });
+            
+            const unassignedGrid = document.getElementById('unassignedGrid');
+            unassignedGrid.innerHTML = '';
+            
+            // 渲染各个等级
+            Object.keys(tierData).forEach(tier => {
+                tierData[tier].forEach(imageData => {
+                    createTierItem(imageData, tier);
+                });
+            });
+            
+            // 如果未分级区域为空，显示提示
+            if (tierData.unassigned.length === 0) {
+                const dropZone = document.createElement('div');
+                dropZone.className = 'drop-zone';
+                dropZone.textContent = '拖拽图片到这里开始分级，或点击上方按钮上传图片';
+                unassignedGrid.appendChild(dropZone);
+            }
+        }
+
+        // 初始化
+        updateFileCount();
+    </script>
+</body>
+</html>
