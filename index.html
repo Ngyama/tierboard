@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TierMaker - 创建你的分级列表</title>
+    <title>TierMaker - 创建你的分级列表 v2.0</title>
     <style>
         * {
             margin: 0;
@@ -124,7 +124,7 @@
         .tier-row {
             display: flex;
             margin-bottom: 10px;
-            min-height: 120px;
+            min-height: 140px; /* 增加高度以适应3:4比例的图片 */
             border-radius: 15px;
             overflow: hidden;
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
@@ -162,12 +162,12 @@
             padding: 15px;
             gap: 15px;
             flex-wrap: wrap;
-            min-height: 120px;
+            min-height: 140px; /* 增加高度以适应3:4比例的图片 */
         }
 
         .tier-item {
             width: 80px;
-            height: 80px;
+            height: 107px; /* 3:4 比例，80 * 4/3 ≈ 107 */
             border-radius: 10px;
             overflow: hidden;
             cursor: grab;
@@ -258,6 +258,45 @@
             border: 2px dashed #4ecdc4;
         }
 
+        .add-image-btn {
+            width: 80px;
+            height: 107px; /* 3:4 比例，与图片框保持一致 */
+            border: 2px dashed #ccc;
+            border-radius: 10px;
+            display: flex !important;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #f8f9fa;
+            color: #666;
+            font-size: 24px;
+            margin-right: 15px;
+            position: relative;
+            z-index: 10;
+            flex-shrink: 0;
+        }
+
+        .add-image-btn:hover {
+            border-color: #4ecdc4;
+            background: rgba(78, 205, 196, 0.1);
+            color: #4ecdc4;
+            transform: scale(1.05);
+        }
+
+        .add-image-btn:active {
+            transform: scale(0.95);
+        }
+
+        @media (max-width: 768px) {
+            .add-image-btn {
+                width: 60px;
+                height: 80px; /* 3:4 比例，60 * 4/3 = 80 */
+                font-size: 20px;
+                margin-right: 10px;
+            }
+        }
+
         @media (max-width: 768px) {
             .header h1 {
                 font-size: 2rem;
@@ -275,7 +314,7 @@
             
             .tier-item {
                 width: 60px;
-                height: 60px;
+                height: 80px; /* 3:4 比例，60 * 4/3 = 80 */
             }
         }
 
@@ -304,8 +343,8 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>🎯 TierMaker</h1>
-            <p>创建你的专属分级列表 - 拖拽图片到不同等级</p>
+            <h1>🎯 TierMaker v2.0</h1>
+            <p>创建你的专属分级列表 - 拖拽图片到不同等级 | 点击+号直接添加图片</p>
         </div>
 
         <div class="controls">
@@ -332,38 +371,50 @@
         <div class="tier-container">
             <div class="tier-row" data-tier="s">
                 <div class="tier-label tier-s">S</div>
-                <div class="tier-content" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+                <div class="tier-content" ondrop="drop(event)" ondragover="allowDrop(event)" ondragleave="handleTierDragLeave(event)">
+                    <div class="add-image-btn" onclick="openImageSelector('s')" title="点击添加图片到S级">+</div>
+                </div>
             </div>
             
             <div class="tier-row" data-tier="a">
                 <div class="tier-label tier-a">A</div>
-                <div class="tier-content" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+                <div class="tier-content" ondrop="drop(event)" ondragover="allowDrop(event)" ondragleave="handleTierDragLeave(event)">
+                    <div class="add-image-btn" onclick="openImageSelector('a')" title="点击添加图片到A级">+</div>
+                </div>
             </div>
             
             <div class="tier-row" data-tier="b">
                 <div class="tier-label tier-b">B</div>
-                <div class="tier-content" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+                <div class="tier-content" ondrop="drop(event)" ondragover="allowDrop(event)" ondragleave="handleTierDragLeave(event)">
+                    <div class="add-image-btn" onclick="openImageSelector('b')" title="点击添加图片到B级">+</div>
+                </div>
             </div>
             
             <div class="tier-row" data-tier="c">
                 <div class="tier-label tier-c">C</div>
-                <div class="tier-content" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+                <div class="tier-content" ondrop="drop(event)" ondragover="allowDrop(event)" ondragleave="handleTierDragLeave(event)">
+                    <div class="add-image-btn" onclick="openImageSelector('c')" title="点击添加图片到C级">+</div>
+                </div>
             </div>
             
             <div class="tier-row" data-tier="d">
                 <div class="tier-label tier-d">D</div>
-                <div class="tier-content" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+                <div class="tier-content" ondrop="drop(event)" ondragover="allowDrop(event)" ondragleave="handleTierDragLeave(event)">
+                    <div class="add-image-btn" onclick="openImageSelector('d')" title="点击添加图片到D级">+</div>
+                </div>
             </div>
             
             <div class="tier-row" data-tier="f">
                 <div class="tier-label tier-f">F</div>
-                <div class="tier-content" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+                <div class="tier-content" ondrop="drop(event)" ondragover="allowDrop(event)" ondragleave="handleTierDragLeave(event)">
+                    <div class="add-image-btn" onclick="openImageSelector('f')" title="点击添加图片到F级">+</div>
+                </div>
             </div>
         </div>
 
         <div class="unassigned-items">
             <div class="unassigned-title">📦 未分级图片</div>
-            <div class="unassigned-grid" id="unassignedGrid" ondrop="drop(event)" ondragover="allowDrop(event)">
+            <div class="unassigned-grid" id="unassignedGrid" ondrop="drop(event)" ondragover="allowDrop(event)" ondragleave="handleTierDragLeave(event)">
                 <div class="drop-zone">
                     拖拽图片到这里开始分级，或点击上方按钮上传图片
                 </div>
@@ -471,12 +522,19 @@
             item.dataset.tier = tier;
             
             item.innerHTML = `
-                <img src="${imageData.src}" alt="${imageData.name}">
+                <img src="${imageData.src}" alt="${imageData.name}" draggable="false">
                 <button class="remove-btn" onclick="removeItem('${imageData.id}')">×</button>
             `;
             
+            // 确保拖拽事件正确绑定
             item.addEventListener('dragstart', handleDragStart);
             item.addEventListener('dragend', handleDragEnd);
+            
+            // 防止图片本身被拖拽
+            const img = item.querySelector('img');
+            img.addEventListener('dragstart', function(e) {
+                e.preventDefault();
+            });
             
             if (tier === 'unassigned') {
                 const unassignedGrid = document.getElementById('unassignedGrid');
@@ -487,7 +545,13 @@
                 unassignedGrid.appendChild(item);
             } else {
                 const tierContent = document.querySelector(`[data-tier="${tier}"] .tier-content`);
-                tierContent.appendChild(item);
+                // 确保虚拟按钮始终在第一个位置
+                const addBtn = tierContent.querySelector('.add-image-btn');
+                if (addBtn) {
+                    tierContent.insertBefore(item, addBtn.nextSibling);
+                } else {
+                    tierContent.appendChild(item);
+                }
             }
         }
 
@@ -495,6 +559,7 @@
         function handleDragStart(event) {
             event.dataTransfer.setData('text/plain', event.target.dataset.id);
             event.target.classList.add('dragging');
+            console.log('拖拽开始:', event.target.dataset.id); // 调试用
         }
 
         // 拖拽结束
@@ -508,6 +573,11 @@
             event.currentTarget.classList.add('drag-over');
         }
 
+        // 拖拽离开
+        function handleTierDragLeave(event) {
+            event.currentTarget.classList.remove('drag-over');
+        }
+
         // 放置
         function drop(event) {
             event.preventDefault();
@@ -516,10 +586,17 @@
             const itemId = event.dataTransfer.getData('text/plain');
             const item = document.querySelector(`[data-id="${itemId}"]`);
             
-            if (!item) return;
+            console.log('放置事件:', itemId, item); // 调试用
+            
+            if (!item) {
+                console.log('未找到拖拽项目'); // 调试用
+                return;
+            }
             
             const targetTier = event.currentTarget.closest('[data-tier]')?.dataset.tier || 'unassigned';
             const currentTier = item.dataset.tier;
+            
+            console.log('从', currentTier, '移动到', targetTier); // 调试用
             
             // 更新数据结构
             moveItemToTier(itemId, currentTier, targetTier);
@@ -689,9 +766,11 @@
 
         // 渲染分级数据
         function renderTierData() {
-            // 清空现有内容
+            // 清空现有内容，但保留虚拟按钮
             document.querySelectorAll('.tier-content').forEach(content => {
-                content.innerHTML = '';
+                // 只移除图片项目，保留虚拟按钮
+                const items = content.querySelectorAll('.tier-item');
+                items.forEach(item => item.remove());
             });
             
             const unassignedGrid = document.getElementById('unassignedGrid');
@@ -711,10 +790,128 @@
                 dropZone.textContent = '拖拽图片到这里开始分级，或点击上方按钮上传图片';
                 unassignedGrid.appendChild(dropZone);
             }
+            
+            // 确保虚拟按钮存在
+            setTimeout(checkVirtualButtons, 50);
+        }
+
+        // 打开图片选择器
+        function openImageSelector(tier) {
+            // 这里将来会集成API调用
+            // 目前先使用文件上传作为占位符
+            console.log('打开图片选择器，目标等级:', tier);
+            alert('点击了' + tier.toUpperCase() + '级的添加按钮！');
+            
+            // 创建文件输入元素
+            const fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            fileInput.multiple = true;
+            fileInput.accept = 'image/*';
+            
+            fileInput.onchange = function(event) {
+                const files = Array.from(event.target.files);
+                if (files.length > 0) {
+                    processFilesToTier(files, tier);
+                }
+            };
+            
+            fileInput.click();
+        }
+
+        // 处理文件到指定等级
+        function processFilesToTier(files, targetTier) {
+            const imageFiles = files.filter(file => file.type.startsWith('image/'));
+            
+            if (imageFiles.length === 0) {
+                alert('请选择图片文件！');
+                return;
+            }
+
+            showLoading(true);
+            
+            imageFiles.forEach((file, index) => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const imageData = {
+                        id: 'img_' + Date.now() + '_' + index,
+                        src: e.target.result,
+                        name: file.name
+                    };
+                    
+                    // 直接添加到指定等级
+                    tierData[targetTier].push(imageData);
+                    createTierItem(imageData, targetTier);
+                    
+                    if (index === imageFiles.length - 1) {
+                        showLoading(false);
+                        updateFileCount();
+                        saveToLocalStorage();
+                    }
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // API集成占位符函数
+        function fetchImagesFromAPI(tier, searchQuery = '') {
+            // TODO: 这里将来会实现API调用
+            // 示例API调用结构：
+            /*
+            fetch('/api/images', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    tier: tier,
+                    query: searchQuery,
+                    limit: 10
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                // 处理API返回的图片数据
+                data.images.forEach(imageData => {
+                    tierData[tier].push(imageData);
+                    createTierItem(imageData, tier);
+                });
+                updateFileCount();
+                saveToLocalStorage();
+            })
+            .catch(error => {
+                console.error('API调用失败:', error);
+                alert('获取图片失败，请稍后重试');
+            });
+            */
+            
+            console.log('API调用占位符 - 等级:', tier, '搜索:', searchQuery);
+            alert('API功能尚未实现，当前使用文件上传功能');
+        }
+
+        // 检查虚拟按钮是否存在
+        function checkVirtualButtons() {
+            const tiers = ['s', 'a', 'b', 'c', 'd', 'f'];
+            tiers.forEach(tier => {
+                const tierContent = document.querySelector(`[data-tier="${tier}"] .tier-content`);
+                const addBtn = tierContent.querySelector('.add-image-btn');
+                console.log(`${tier.toUpperCase()}级虚拟按钮:`, addBtn ? '存在' : '不存在');
+                if (!addBtn) {
+                    console.log('重新创建虚拟按钮...');
+                    const newBtn = document.createElement('div');
+                    newBtn.className = 'add-image-btn';
+                    newBtn.onclick = () => openImageSelector(tier);
+                    newBtn.title = `点击添加图片到${tier.toUpperCase()}级`;
+                    newBtn.textContent = '+';
+                    tierContent.insertBefore(newBtn, tierContent.firstChild);
+                }
+            });
         }
 
         // 初始化
         updateFileCount();
+        
+        // 检查虚拟按钮
+        setTimeout(checkVirtualButtons, 100);
     </script>
 </body>
 </html>
