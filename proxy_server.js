@@ -1,0 +1,85 @@
+const express = require('express');
+const cors = require('cors');
+const fetch = require('node-fetch');
+const path = require('path');
+require('dotenv').config();
+
+const app = express();
+const PORT = 3000;
+
+// 启用CORS
+app.use(cors());
+app.use(express.json());
+app.use(express.static('.'));
+
+// IGDB API代理端点
+app.post('/api/igdb/games', async (req, res) => {
+    console.log('收到API请求:', req.body);
+    try {
+        const CLIENT_ID = process.env.IGDB_CLIENT_ID;
+        const CLIENT_SECRET = process.env.IGDB_CLIENT_SECRET;
+        
+        console.log('环境变量检查:', {
+            CLIENT_ID: CLIENT_ID ? '已设置' : '未设置',
+            CLIENT_SECRET: CLIENT_SECRET ? '已设置' : '未设置'
+        });
+        
+        if (!CLIENT_ID || !CLIENT_SECRET) {
+            throw new Error('IGDB API credentials not found. Please check your .env file.');
+        }
+        
+        console.log('获取Token...');
+        // 获取新的Access Token
+        const tokenResponse = await fetch('https://id.twitch.tv/oauth2/token', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: new URLSearchParams({
+                'client_id': CLIENT_ID,
+                'client_secret': CLIENT_SECRET,
+                'grant_type': 'client_credentials'
+            })
+        });
+        
+        if (!tokenResponse.ok) {
+            throw new Error(`获取Token失败: ${tokenResponse.status}`);
+        }
+        
+        const tokenData = await tokenResponse.json();
+        const ACCESS_TOKEN = tokenData.access_token;
+        console.log('Token获取成功');
+        
+        console.log('调用IGDB API...');
+        console.log('请求体:', req.body);
+        
+        // 调用IGDB API
+        const igdbResponse = await fetch('https://api.igdb.com/v4/games', {
+            method: 'POST',
+            headers: {
+                'Client-ID': CLIENT_ID,
+                'Authorization': `Bearer ${ACCESS_TOKEN}`,
+                'Accept': 'application/json',
+                'Content-Type': 'text/plain'
+            },
+            body: req.body.query || JSON.stringify(req.body)
+        });
+        
+        if (!igdbResponse.ok) {
+            throw new Error(`IGDB API请求失败: ${igdbResponse.status}`);
+        }
+        
+        const games = await igdbResponse.json();
+        console.log(`返回 ${games.length} 个游戏`);
+        res.json(games);
+        
+    } catch (error) {
+        console.error('代理错误:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.listen(PORT, () => {
+    console.log(`代理服务器运行在 http://localhost:${PORT}`);
+    console.log('请在浏览器中访问: http://localhost:3000');
+});
