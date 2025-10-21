@@ -79,6 +79,61 @@ app.post('/api/igdb/games', async (req, res) => {
     }
 });
 
+// Google Books API代理端点
+app.post('/api/google/books', async (req, res) => {
+    console.log('收到Google Books API请求:', req.body);
+    try {
+        const API_KEY = process.env.GOOGLE_BOOKS_API_KEY;
+        
+        console.log('Google Books API Key检查:', {
+            API_KEY: API_KEY ? '已设置' : '未设置'
+        });
+        
+        if (!API_KEY) {
+            throw new Error('Google Books API Key not found. Please check your .env file.');
+        }
+        
+        const { query, maxResults = 20 } = req.body;
+        if (!query) {
+            throw new Error('搜索查询不能为空');
+        }
+        
+        console.log('调用Google Books API...');
+        
+        // 调用Google Books API
+        const booksResponse = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&key=${API_KEY}&maxResults=${maxResults}&langRestrict=zh`);
+        
+        if (!booksResponse.ok) {
+            throw new Error(`Google Books API请求失败: ${booksResponse.status}`);
+        }
+        
+        const data = await booksResponse.json();
+        console.log(`返回 ${data.items ? data.items.length : 0} 本书籍`);
+        
+        // 格式化返回数据
+        const books = data.items ? data.items.map(item => {
+            const volumeInfo = item.volumeInfo;
+            return {
+                id: item.id,
+                title: volumeInfo.title || '未知标题',
+                authors: volumeInfo.authors ? volumeInfo.authors.join(', ') : '未知作者',
+                cover: volumeInfo.imageLinks ? volumeInfo.imageLinks.thumbnail : null,
+                description: volumeInfo.description || '',
+                publishedDate: volumeInfo.publishedDate || '',
+                averageRating: volumeInfo.averageRating || 0,
+                pageCount: volumeInfo.pageCount || 0,
+                language: volumeInfo.language || 'zh'
+            };
+        }) : [];
+        
+        res.json(books);
+        
+    } catch (error) {
+        console.error('Google Books API代理错误:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
 app.listen(PORT, () => {
     console.log(`代理服务器运行在 http://localhost:${PORT}`);
     console.log('请在浏览器中访问: http://localhost:3000');

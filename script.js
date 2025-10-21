@@ -854,8 +854,38 @@ async function fetchAnimeFromAPI(searchQuery) {
 }
 
 async function fetchBooksFromAPI(searchQuery) {
-    // TODO: 实现书籍搜索API
-    return [];
+    try {
+        const response = await fetch('/api/google/books', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                query: searchQuery,
+                maxResults: 20
+            })
+        });
+        
+        if (!response.ok) {
+            throw new Error(`API请求失败: ${response.status}`);
+        }
+        
+        const books = await response.json();
+        return books.map(book => ({
+            id: book.id,
+            name: book.title,
+            summary: book.description || '暂无描述',
+            cover: book.cover ? {
+                url: book.cover.replace('http://', 'https://')
+            } : null,
+            authors: book.authors,
+            publishedDate: book.publishedDate,
+            rating: book.averageRating
+        }));
+    } catch (error) {
+        console.error('Google Books API错误:', error);
+        throw new Error(`搜索书籍失败: ${error.message}`);
+    }
 }
 
 async function fetchMusicFromAPI(searchQuery) {
@@ -914,28 +944,48 @@ async function fetchGamesFromIGDBAPI(searchQuery) {
 }
 
 // 显示搜索结果
-function displaySearchResults(games) {
+function displaySearchResults(items) {
     const resultsContainer = document.getElementById('searchResults');
     
-    console.log('displaySearchResults 被调用，游戏数量:', games.length);
-    console.log('游戏数据:', games);
+    console.log('displaySearchResults 被调用，项目数量:', items.length);
+    console.log('项目数据:', items);
     
-    if (games.length === 0) {
-        resultsContainer.innerHTML = '<div class="no-results">😔 未找到相关游戏</div>';
+    if (items.length === 0) {
+        const noResultsText = {
+            'games': '😔 未找到相关游戏',
+            'books': '😔 未找到相关书籍',
+            'anime': '😔 未找到相关动画',
+            'music': '😔 未找到相关音乐'
+        };
+        resultsContainer.innerHTML = `<div class="no-results">${noResultsText[currentMediaType] || '😔 未找到相关内容'}</div>`;
         return;
     }
     
     try {
-        resultsContainer.innerHTML = games.map(game => {
-            const coverUrl = game.cover && game.cover.url 
-                ? `https:${game.cover.url.replace('t_thumb', 't_cover_big')}` 
-                : 'https://via.placeholder.com/200x120?text=No+Cover';
+        resultsContainer.innerHTML = items.map(item => {
+            let coverUrl, title, description;
+            
+            if (currentMediaType === 'books') {
+                // 书籍显示
+                coverUrl = item.cover && item.cover.url 
+                    ? item.cover.url 
+                    : 'https://via.placeholder.com/200x120?text=No+Cover';
+                title = item.name;
+                description = item.summary ? item.summary.substring(0, 100) + '...' : '暂无描述';
+            } else {
+                // 游戏显示（默认）
+                coverUrl = item.cover && item.cover.url 
+                    ? `https:${item.cover.url.replace('t_thumb', 't_cover_big')}` 
+                    : 'https://via.placeholder.com/200x120?text=No+Cover';
+                title = item.name;
+                description = item.summary ? item.summary.substring(0, 100) + '...' : '暂无描述';
+            }
             
             return `
-                <div class="game-result" onclick="selectGame('${game.id}', '${game.name.replace(/'/g, "\\'")}', '${coverUrl}')">
-                    <img src="${coverUrl}" alt="${game.name}" loading="lazy" onerror="this.src='https://via.placeholder.com/200x120?text=No+Cover'">
-                    <h3>${game.name}</h3>
-                    <p>${game.summary ? game.summary.substring(0, 100) + '...' : '暂无描述'}</p>
+                <div class="game-result" onclick="selectGame('${item.id}', '${title.replace(/'/g, "\\'")}', '${coverUrl}')">
+                    <img src="${coverUrl}" alt="${title}" loading="lazy" onerror="this.src='https://via.placeholder.com/200x120?text=No+Cover'">
+                    <h3>${title}</h3>
+                    <p>${description}</p>
                 </div>
             `;
         }).join('');
