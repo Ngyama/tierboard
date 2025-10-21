@@ -14,18 +14,13 @@
         </div>
 
         <div class="controls">
-            <div class="upload-section">
-                <button class="upload-btn" onclick="document.getElementById('fileInput').click()">
-                    上传图片
-                </button>
-                <input type="file" id="fileInput" class="file-input" multiple accept="image/*">
-                <span id="fileCount">已上传 0 张图片</span>
-            </div>
-            
             <div class="action-buttons">
                 <button class="btn btn-primary" onclick="exportTierList()">导出分级图</button>
                 <button class="btn btn-secondary" onclick="clearAll()">清空所有</button>
-                <button class="btn btn-success" onclick="addSampleImages()">添加示例图片</button>
+                <button class="btn btn-success" onclick="openTierManager()">管理分级</button>
+            </div>
+            <div class="file-count">
+                <span id="fileCount">已上传 0 张图片</span>
             </div>
         </div>
 
@@ -34,55 +29,33 @@
             <p>正在处理图片...</p>
         </div>
 
-        <div class="tier-container">
-            <div class="tier-row" data-tier="s">
-                <div class="tier-label tier-s">S</div>
-                <div class="tier-content" ondrop="drop(event)" ondragover="allowDrop(event)" ondragleave="handleTierDragLeave(event)">
-                    <div class="add-image-btn" onclick="openImageSelector('s')" title="点击添加图片到S级">+</div>
-                </div>
-            </div>
-            
-            <div class="tier-row" data-tier="a">
-                <div class="tier-label tier-a">A</div>
-                <div class="tier-content" ondrop="drop(event)" ondragover="allowDrop(event)" ondragleave="handleTierDragLeave(event)">
-                    <div class="add-image-btn" onclick="openImageSelector('a')" title="点击添加图片到A级">+</div>
-                </div>
-            </div>
-            
-            <div class="tier-row" data-tier="b">
-                <div class="tier-label tier-b">B</div>
-                <div class="tier-content" ondrop="drop(event)" ondragover="allowDrop(event)" ondragleave="handleTierDragLeave(event)">
-                    <div class="add-image-btn" onclick="openImageSelector('b')" title="点击添加图片到B级">+</div>
-                </div>
-            </div>
-            
-            <div class="tier-row" data-tier="c">
-                <div class="tier-label tier-c">C</div>
-                <div class="tier-content" ondrop="drop(event)" ondragover="allowDrop(event)" ondragleave="handleTierDragLeave(event)">
-                    <div class="add-image-btn" onclick="openImageSelector('c')" title="点击添加图片到C级">+</div>
-                </div>
-            </div>
-            
-            <div class="tier-row" data-tier="d">
-                <div class="tier-label tier-d">D</div>
-                <div class="tier-content" ondrop="drop(event)" ondragover="allowDrop(event)" ondragleave="handleTierDragLeave(event)">
-                    <div class="add-image-btn" onclick="openImageSelector('d')" title="点击添加图片到D级">+</div>
-                </div>
-            </div>
-            
-            <div class="tier-row" data-tier="f">
-                <div class="tier-label tier-f">F</div>
-                <div class="tier-content" ondrop="drop(event)" ondragover="allowDrop(event)" ondragleave="handleTierDragLeave(event)">
-                    <div class="add-image-btn" onclick="openImageSelector('f')" title="点击添加图片到F级">+</div>
-                </div>
-            </div>
+        <div class="tier-container" id="tierContainer">
+            <!-- 分级行将通过JavaScript动态生成 -->
         </div>
 
         <div class="unassigned-items">
             <div class="unassigned-title">未分级图片</div>
             <div class="unassigned-grid" id="unassignedGrid" ondrop="drop(event)" ondragover="allowDrop(event)" ondragleave="handleTierDragLeave(event)">
+                <div class="add-image-btn" onclick="openImageUpload()" title="点击上传图片">+</div>
                 <div class="drop-zone">
-                    拖拽图片到这里开始分级，或点击上方按钮上传图片
+                    拖拽图片到这里开始分级，或点击+号上传图片
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 分级管理模态框 -->
+    <div id="tierManagerModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>管理分级</h2>
+                <span class="close" onclick="closeTierManager()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="tier-manager-section">
+                    <h3>当前分级</h3>
+                    <div id="tierList" class="tier-list"></div>
+                    <button class="btn btn-success" onclick="addNewTier()">+ 添加新分级</button>
                 </div>
             </div>
         </div>
@@ -91,13 +64,29 @@
     <!-- 游戏搜索侧边栏 -->
     <div id="gameSearchSidebar" class="search-sidebar" style="display: none;">
         <div class="sidebar-header">
-            <h2>搜索游戏</h2>
+            <h2 id="sidebarTitle">搜索游戏</h2>
             <span class="close" onclick="closeGameSearchModal()">&times;</span>
         </div>
         <div class="sidebar-body">
+            <!-- 媒体类型切换 -->
+            <div class="media-type-selector">
+                <button class="media-type-btn active" data-type="games" onclick="switchMediaType('games')">
+                    🎮 游戏
+                </button>
+                <button class="media-type-btn" data-type="anime" onclick="switchMediaType('anime')">
+                    📺 动画
+                </button>
+                <button class="media-type-btn" data-type="books" onclick="switchMediaType('books')">
+                    📚 书籍
+                </button>
+                <button class="media-type-btn" data-type="music" onclick="switchMediaType('music')">
+                    🎵 音乐
+                </button>
+            </div>
+            
             <div class="search-section">
-                <input type="text" id="gameSearchInput" placeholder="输入游戏名称..." maxlength="100">
-                <button id="searchGameBtn" onclick="searchGames()">搜索</button>
+                <input type="text" id="searchInput" placeholder="输入名称..." maxlength="100">
+                <button id="searchBtn" onclick="searchMedia()">搜索</button>
             </div>
             <div id="searchResults" class="search-results"></div>
         </div>

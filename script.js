@@ -1,20 +1,66 @@
 // 全局变量
 let imageCounter = 0;
+
+// 分级配置
+let tierConfig = [
+    { id: 's', name: 'S', color: '#ffb3d9' },
+    { id: 'a', name: 'A', color: '#f0e68c' },
+    { id: 'b', name: 'B', color: '#98fb98' },
+    { id: 'c', name: 'C', color: '#87ceeb' },
+    { id: 'd', name: 'D', color: '#dda0dd' },
+    { id: 'f', name: 'F', color: '#ffb6c1' }
+];
+
+// 分级数据
 let tierData = {
-    s: [],
-    a: [],
-    b: [],
-    c: [],
-    d: [],
-    f: [],
     unassigned: []
 };
 
+// 初始化分级数据
+function initializeTierData() {
+    tierConfig.forEach(tier => {
+        if (!tierData[tier.id]) {
+            tierData[tier.id] = [];
+        }
+    });
+}
+
 // 页面加载时恢复数据
 document.addEventListener('DOMContentLoaded', function() {
+    initializeTierData();
     loadFromLocalStorage();
     setupEventListeners();
+    // 确保在数据加载后再渲染分级行
+    renderTierRows();
 });
+
+// 渲染分级行
+function renderTierRows() {
+    const container = document.getElementById('tierContainer');
+    if (!container) {
+        console.warn('tierContainer not found');
+        return;
+    }
+    
+    container.innerHTML = '';
+    
+    tierConfig.forEach(tier => {
+        const tierRow = document.createElement('div');
+        tierRow.className = 'tier-row';
+        tierRow.dataset.tier = tier.id;
+        
+        tierRow.innerHTML = `
+            <div class="tier-label" style="background: ${tier.color};" onclick="editTierName('${tier.id}')" title="点击编辑分级名称">
+                <span class="tier-name">${tier.name}</span>
+            </div>
+            <div class="tier-content" ondrop="drop(event)" ondragover="allowDrop(event)" ondragleave="handleTierDragLeave(event)">
+                <div class="add-image-btn" onclick="openImageSelector('${tier.id}')" title="点击添加图片到${tier.name}级">+</div>
+            </div>
+        `;
+        
+        container.appendChild(tierRow);
+    });
+}
 
 // 设置事件监听器
 function setupEventListeners() {
@@ -33,6 +79,14 @@ function setupEventListeners() {
     sidebar.addEventListener('click', function(event) {
         if (event.target === sidebar) {
             closeGameSearchModal();
+        }
+    });
+    
+    // 模态框点击外部关闭
+    const modal = document.getElementById('tierManagerModal');
+    modal.addEventListener('click', function(event) {
+        if (event.target === modal) {
+            closeTierManager();
         }
     });
 }
@@ -85,6 +139,13 @@ function processFiles(files) {
             
             tierData.unassigned.push(imageData);
             createTierItem(imageData, 'unassigned');
+            
+            // 隐藏drop-zone，显示虚拟按钮
+            const unassignedGrid = document.getElementById('unassignedGrid');
+            const dropZone = unassignedGrid.querySelector('.drop-zone');
+            if (dropZone) {
+                dropZone.style.display = 'none';
+            }
             
             if (index === imageFiles.length - 1) {
                 showLoading(false);
@@ -341,10 +402,10 @@ function removeItem(itemId) {
     // 如果未分级区域为空，显示提示
     if (tier === 'unassigned' && tierData.unassigned.length === 0) {
         const unassignedGrid = document.getElementById('unassignedGrid');
-        const dropZone = document.createElement('div');
-        dropZone.className = 'drop-zone';
-        dropZone.textContent = '拖拽图片到这里开始分级，或点击上方按钮上传图片';
-        unassignedGrid.appendChild(dropZone);
+        unassignedGrid.innerHTML = `
+            <div class="add-image-btn" onclick="openImageUpload()" title="点击上传图片">+</div>
+            <div class="drop-zone">拖拽图片到这里开始分级，或点击+号上传图片</div>
+        `;
     }
     
     updateFileCount();
@@ -362,44 +423,150 @@ function showLoading(show) {
     document.getElementById('loading').style.display = show ? 'block' : 'none';
 }
 
-// 添加示例图片
-function addSampleImages() {
-    const sampleImages = [
-        'https://via.placeholder.com/80x80/ff6b6b/ffffff?text=1',
-        'https://via.placeholder.com/80x80/4ecdc4/ffffff?text=2',
-        'https://via.placeholder.com/80x80/45b7d1/ffffff?text=3',
-        'https://via.placeholder.com/80x80/f9ca24/ffffff?text=4',
-        'https://via.placeholder.com/80x80/6c5ce7/ffffff?text=5',
-        'https://via.placeholder.com/80x80/a29bfe/ffffff?text=6'
-    ];
+// 打开图片上传
+function openImageUpload() {
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.multiple = true;
+    fileInput.accept = 'image/*';
     
-    sampleImages.forEach((src, index) => {
-        const imageData = {
-            id: 'sample_' + Date.now() + '_' + index,
-            src: src,
-            name: `示例图片 ${index + 1}`
-        };
+    fileInput.onchange = function(event) {
+        const files = Array.from(event.target.files);
+        if (files.length > 0) {
+            processFiles(files);
+        }
+    };
+    
+    fileInput.click();
+}
+
+// 编辑分级名称
+function editTierName(tierId) {
+    const tier = tierConfig.find(t => t.id === tierId);
+    if (!tier) return;
+    
+    const newName = prompt('请输入新的分级名称:', tier.name);
+    if (newName && newName.trim() && newName !== tier.name) {
+        tier.name = newName.trim();
+        renderTierRows();
+        renderTierData();
+        saveToLocalStorage();
+    }
+}
+
+// 打开分级管理器
+function openTierManager() {
+    const modal = document.getElementById('tierManagerModal');
+    modal.style.display = 'block';
+    renderTierManager();
+}
+
+// 关闭分级管理器
+function closeTierManager() {
+    document.getElementById('tierManagerModal').style.display = 'none';
+}
+
+// 渲染分级管理器
+function renderTierManager() {
+    const tierList = document.getElementById('tierList');
+    tierList.innerHTML = '';
+    
+    tierConfig.forEach(tier => {
+        const item = document.createElement('div');
+        item.className = 'tier-manager-item';
         
-        tierData.unassigned.push(imageData);
-        createTierItem(imageData, 'unassigned');
+        item.innerHTML = `
+            <div class="tier-color" style="background: ${tier.color};" onclick="changeTierColor('${tier.id}')" title="点击更改颜色"></div>
+            <input type="text" value="${tier.name}" onchange="updateTierName('${tier.id}', this.value)" maxlength="10">
+            <button class="delete-btn" onclick="deleteTier('${tier.id}')" ${tierConfig.length <= 1 ? 'disabled' : ''}>删除</button>
+        `;
+        
+        tierList.appendChild(item);
     });
+}
+
+// 更新分级名称
+function updateTierName(tierId, newName) {
+    const tier = tierConfig.find(t => t.id === tierId);
+    if (tier && newName.trim()) {
+        tier.name = newName.trim();
+        renderTierRows();
+        renderTierData();
+        saveToLocalStorage();
+    }
+}
+
+// 更改分级颜色
+function changeTierColor(tierId) {
+    const colors = ['#ffb3d9', '#f0e68c', '#98fb98', '#87ceeb', '#dda0dd', '#ffb6c1', '#ffa07a', '#98d8f0', '#f0e68c', '#dda0dd'];
+    const tier = tierConfig.find(t => t.id === tierId);
+    if (tier) {
+        const currentIndex = colors.indexOf(tier.color);
+        const nextIndex = (currentIndex + 1) % colors.length;
+        tier.color = colors[nextIndex];
+        renderTierRows();
+        renderTierData();
+        renderTierManager();
+        saveToLocalStorage();
+    }
+}
+
+// 删除分级
+function deleteTier(tierId) {
+    if (tierConfig.length <= 1) {
+        alert('至少需要保留一个分级！');
+        return;
+    }
     
-    updateFileCount();
-    saveToLocalStorage();
+    if (confirm('确定要删除这个分级吗？分级中的图片将移动到未分级区域。')) {
+        // 将分级中的图片移动到未分级区域
+        if (tierData[tierId] && tierData[tierId].length > 0) {
+            tierData.unassigned = tierData.unassigned.concat(tierData[tierId]);
+        }
+        
+        // 删除分级配置
+        tierConfig = tierConfig.filter(t => t.id !== tierId);
+        delete tierData[tierId];
+        
+        // 重新渲染
+        renderTierRows();
+        renderTierData();
+        renderTierManager();
+        saveToLocalStorage();
+    }
+}
+
+// 添加新分级
+function addNewTier() {
+    const newName = prompt('请输入新分级的名称:', '新分级');
+    if (newName && newName.trim()) {
+        const newId = 'tier_' + Date.now();
+        const colors = ['#ffb3d9', '#f0e68c', '#98fb98', '#87ceeb', '#dda0dd', '#ffb6c1', '#ffa07a', '#98d8f0'];
+        const randomColor = colors[Math.floor(Math.random() * colors.length)];
+        
+        tierConfig.push({
+            id: newId,
+            name: newName.trim(),
+            color: randomColor
+        });
+        
+        tierData[newId] = [];
+        
+        renderTierRows();
+        renderTierData();
+        renderTierManager();
+        saveToLocalStorage();
+    }
 }
 
 // 清空所有
 function clearAll() {
     if (confirm('确定要清空所有图片吗？')) {
-        tierData = {
-            s: [],
-            a: [],
-            b: [],
-            c: [],
-            d: [],
-            f: [],
-            unassigned: []
-        };
+        // 清空所有分级的数据
+        tierData = { unassigned: [] };
+        tierConfig.forEach(tier => {
+            tierData[tier.id] = [];
+        });
         
         // 清空DOM，但保留虚拟按钮
         document.querySelectorAll('.tier-content').forEach(content => {
@@ -408,7 +575,10 @@ function clearAll() {
         });
         
         const unassignedGrid = document.getElementById('unassignedGrid');
-        unassignedGrid.innerHTML = '<div class="drop-zone">拖拽图片到这里开始分级，或点击上方按钮上传图片</div>';
+        unassignedGrid.innerHTML = `
+            <div class="add-image-btn" onclick="openImageUpload()" title="点击上传图片">+</div>
+            <div class="drop-zone">拖拽图片到这里开始分级，或点击+号上传图片</div>
+        `;
         
         // 确保虚拟按钮存在
         setTimeout(checkVirtualButtons, 50);
@@ -446,7 +616,11 @@ function exportTierList() {
 // 保存到本地存储
 function saveToLocalStorage() {
     try {
-        localStorage.setItem('tierMakerData', JSON.stringify(tierData));
+        const saveData = {
+            tierConfig: tierConfig,
+            tierData: tierData
+        };
+        localStorage.setItem('tierMakerData', JSON.stringify(saveData));
     } catch (e) {
         console.warn('无法保存到本地存储:', e);
     }
@@ -457,12 +631,38 @@ function loadFromLocalStorage() {
     try {
         const saved = localStorage.getItem('tierMakerData');
         if (saved) {
-            tierData = JSON.parse(saved);
+            const saveData = JSON.parse(saved);
+            
+            // 兼容旧版本数据
+            if (saveData.tierConfig) {
+                tierConfig = saveData.tierConfig;
+            }
+            if (saveData.tierData) {
+                tierData = saveData.tierData;
+            } else {
+                // 旧版本数据格式
+                tierData = saveData;
+            }
+            
+            // 确保所有分级都有数据
+            tierConfig.forEach(tier => {
+                if (!tierData[tier.id]) {
+                    tierData[tier.id] = [];
+                }
+            });
+            
             renderTierData();
             updateFileCount();
+            // 数据加载完成后重新渲染分级行
+            renderTierRows();
+        } else {
+            // 如果没有保存的数据，确保默认分级配置正确显示
+            renderTierRows();
         }
     } catch (e) {
         console.warn('无法从本地存储加载数据:', e);
+        // 出错时也要确保分级行显示
+        renderTierRows();
     }
 }
 
@@ -480,19 +680,27 @@ function renderTierData() {
     
     // 渲染各个等级 - 按时间顺序渲染，最新的在前面
     Object.keys(tierData).forEach(tier => {
-        // 反转数组，让最新的图片在前面
-        const reversedData = [...tierData[tier]].reverse();
-        reversedData.forEach(imageData => {
-            createTierItem(imageData, tier);
-        });
+        if (tierData[tier] && tierData[tier].length > 0) {
+            // 反转数组，让最新的图片在前面
+            const reversedData = [...tierData[tier]].reverse();
+            reversedData.forEach(imageData => {
+                createTierItem(imageData, tier);
+            });
+        }
     });
     
     // 如果未分级区域为空，显示提示
     if (tierData.unassigned.length === 0) {
-        const dropZone = document.createElement('div');
-        dropZone.className = 'drop-zone';
-        dropZone.textContent = '拖拽图片到这里开始分级，或点击上方按钮上传图片';
-        unassignedGrid.appendChild(dropZone);
+        unassignedGrid.innerHTML = `
+            <div class="add-image-btn" onclick="openImageUpload()" title="点击上传图片">+</div>
+            <div class="drop-zone">拖拽图片到这里开始分级，或点击+号上传图片</div>
+        `;
+    } else {
+        // 如果有图片，隐藏drop-zone
+        const dropZone = unassignedGrid.querySelector('.drop-zone');
+        if (dropZone) {
+            dropZone.style.display = 'none';
+        }
     }
     
     // 确保虚拟按钮存在
@@ -501,6 +709,9 @@ function renderTierData() {
 
 // 全局变量存储当前选择的等级
 let currentSelectedTier = '';
+
+// 全局变量存储当前选择的媒体类型
+let currentMediaType = 'games';
 
 // 打开图片选择器
 function openImageSelector(tier) {
@@ -515,13 +726,17 @@ function openImageSelector(tier) {
 function openGameSearchModal() {
     console.log('openGameSearchModal 被调用');
     const sidebar = document.getElementById('gameSearchSidebar');
-    const searchInput = document.getElementById('gameSearchInput');
+    const searchInput = document.getElementById('searchInput');
     
     console.log('侧边栏元素:', sidebar);
     console.log('搜索输入框:', searchInput);
     
     sidebar.style.display = 'flex';
     searchInput.focus();
+    
+    // 重置为游戏类型
+    currentMediaType = 'games';
+    updateMediaTypeUI();
     
     // 清空之前的结果
     document.getElementById('searchResults').innerHTML = '';
@@ -530,7 +745,7 @@ function openGameSearchModal() {
     searchInput.onkeypress = function(e) {
         if (e.key === 'Enter') {
             console.log('回车键被按下，开始搜索');
-            searchGames();
+            searchMedia();
         }
     };
 }
@@ -542,34 +757,112 @@ function closeGameSearchModal() {
     currentSelectedTier = '';
 }
 
-// 搜索游戏
-async function searchGames() {
-    console.log('searchGames 函数被调用');
-    const searchInput = document.getElementById('gameSearchInput');
+// 切换媒体类型
+function switchMediaType(type) {
+    currentMediaType = type;
+    updateMediaTypeUI();
+    
+    // 清空搜索结果
+    document.getElementById('searchResults').innerHTML = '';
+    
+    // 更新搜索框占位符
+    const searchInput = document.getElementById('searchInput');
+    const placeholders = {
+        'games': '输入游戏名称...',
+        'anime': '输入动画名称...',
+        'books': '输入书籍名称...',
+        'music': '输入音乐名称...'
+    };
+    searchInput.placeholder = placeholders[type] || '输入名称...';
+}
+
+// 更新媒体类型UI
+function updateMediaTypeUI() {
+    // 更新按钮状态
+    document.querySelectorAll('.media-type-btn').forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.dataset.type === currentMediaType) {
+            btn.classList.add('active');
+        }
+    });
+    
+    // 更新标题
+    const titles = {
+        'games': '搜索游戏',
+        'anime': '搜索动画',
+        'books': '搜索书籍',
+        'music': '搜索音乐'
+    };
+    document.getElementById('sidebarTitle').textContent = titles[currentMediaType] || '搜索';
+}
+
+// 搜索媒体内容
+async function searchMedia() {
+    console.log('searchMedia 函数被调用，媒体类型:', currentMediaType);
+    const searchInput = document.getElementById('searchInput');
     const searchQuery = searchInput.value.trim();
     const resultsContainer = document.getElementById('searchResults');
     
     console.log('搜索查询:', searchQuery);
     
     if (!searchQuery) {
-        alert('请输入游戏名称');
+        alert('请输入搜索内容');
         return;
     }
     
     // 显示加载状态
     resultsContainer.innerHTML = '<div class="no-results">🔍 搜索中...</div>';
-    console.log('开始搜索游戏:', searchQuery);
+    console.log('开始搜索:', searchQuery, '类型:', currentMediaType);
     
     try {
-        const games = await fetchGamesFromIGDBAPI(searchQuery);
+        let results;
+        
+        // 根据媒体类型调用不同的API
+        switch (currentMediaType) {
+            case 'games':
+                results = await fetchGamesFromIGDBAPI(searchQuery);
+                break;
+            case 'anime':
+                // TODO: 实现动画API
+                results = await fetchAnimeFromAPI(searchQuery);
+                break;
+            case 'books':
+                // TODO: 实现书籍API
+                results = await fetchBooksFromAPI(searchQuery);
+                break;
+            case 'music':
+                // TODO: 实现音乐API
+                results = await fetchMusicFromAPI(searchQuery);
+                break;
+            default:
+                throw new Error('未知的媒体类型');
+        }
+        
         console.log('搜索完成，准备显示结果');
-        displaySearchResults(games);
+        displaySearchResults(results);
     } catch (error) {
         console.error('搜索失败:', error);
         console.error('错误详情:', error.message);
-        resultsContainer.innerHTML = `<div class="no-results">❌ 搜索失败: ${error.message}<br><br>请检查：<br>1. 网络连接<br>2. API密钥是否正确<br>3. Token是否过期</div>`;
+        resultsContainer.innerHTML = `<div class="no-results">❌ 搜索失败: ${error.message}<br><br>请检查：<br>1. 网络连接<br>2. API配置<br>3. 搜索内容</div>`;
     }
 }
+
+// 占位符函数 - 等待API实现
+async function fetchAnimeFromAPI(searchQuery) {
+    // TODO: 实现动画搜索API
+    return [];
+}
+
+async function fetchBooksFromAPI(searchQuery) {
+    // TODO: 实现书籍搜索API
+    return [];
+}
+
+async function fetchMusicFromAPI(searchQuery) {
+    // TODO: 实现音乐搜索API
+    return [];
+}
+
 
 
 // 从IGDB API获取游戏数据（通过代理服务器）
