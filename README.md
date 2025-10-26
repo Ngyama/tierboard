@@ -1,89 +1,89 @@
-# TierMaker - 游戏分级列表制作工具
+# TierMaker - Game Tier List Creation Tool
 
-一个现代化的游戏分级列表制作工具，支持拖拽操作和IGDB游戏数据库集成。
+A modern game tier list creation tool with drag-and-drop functionality and IGDB game database integration.
 
-## 功能特点
+## Features
 
-- 🎯 **分级系统**：支持 S、A、B、C、D、F 六个等级
-- 🖱️ **拖拽操作**：直观的拖拽排序功能
-- 🎮 **游戏搜索**：集成IGDB API，搜索游戏并添加封面
-- 📱 **响应式设计**：支持桌面端和移动端
-- 💾 **数据持久化**：自动保存到本地存储
-- 📊 **导出功能**：支持导出分级图为PNG
+- **Tier System**: Supports S, A, B, C, D, F six tiers
+- **Drag and Drop**: Intuitive drag-and-drop sorting functionality
+- **Game Search**: Integrated IGDB API for searching games and adding covers
+- **Responsive Design**: Supports desktop and mobile devices
+- **Data Persistence**: Automatically saves to local storage
+- **Export Function**: Supports exporting tier charts as PNG
 
-## 安装和运行
+## Installation and Setup
 
-### 1. 克隆项目
+### 1. Clone the Project
 ```bash
 git clone <your-repo-url>
 cd tierboard
 ```
 
-### 2. 安装依赖
+### 2. Install Dependencies
 ```bash
 npm install
 ```
 
-### 3. 配置环境变量
-复制 `.env.example` 文件为 `.env`：
+### 3. Configure Environment Variables
+Copy `.env.example` file to `.env`:
 ```bash
 cp .env.example .env
 ```
 
-编辑 `.env` 文件，填入你的IGDB API密钥：
+Edit the `.env` file and add your IGDB API credentials:
 ```env
 IGDB_CLIENT_ID=your_client_id_here
 IGDB_CLIENT_SECRET=your_client_secret_here
 ```
 
-### 4. 获取IGDB API密钥
-1. 访问 [IGDB API](https://api.igdb.com/)
-2. 注册账号并创建应用
-3. 获取 Client ID 和 Client Secret
-4. 将密钥填入 `.env` 文件
+### 4. Get IGDB API Credentials
+1. Visit [IGDB API](https://api.igdb.com/)
+2. Register an account and create an application
+3. Get Client ID and Client Secret
+4. Add the credentials to the `.env` file
 
-### 5. 启动服务器
+### 5. Start the Server
 ```bash
 npm start
 ```
 
-### 6. 访问应用
-打开浏览器访问：`http://localhost:3000`
+### 6. Access the Application
+Open your browser and visit: `http://localhost:3000`
 
-## 使用方法
+## Usage
 
-1. **添加游戏**：点击任意等级的"+"按钮，搜索游戏并添加
-2. **拖拽排序**：拖拽图片到不同等级或调整顺序
-3. **导出结果**：点击"导出分级图"按钮保存为PNG
-4. **清空重置**：点击"清空所有"按钮重置所有数据
+1. **Add Games**: Click the "+" button on any tier to search and add games
+2. **Drag and Sort**: Drag images to different tiers or reorder within tiers
+3. **Export Results**: Click "Export Tier Chart" button to save as PNG
+4. **Clear All**: Click "Clear All" button to reset all data
 
-## 技术栈
+## Tech Stack
 
-- **前端**：HTML5, CSS3, JavaScript (ES6+)
-- **后端**：Node.js, Express
-- **API**：IGDB (Internet Game Database)
-- **样式**：CSS Grid, Flexbox, 响应式设计
+- **Frontend**: HTML5, CSS3, JavaScript (ES6+)
+- **Backend**: Node.js, Express
+- **API**: IGDB (Internet Game Database)
+- **Styling**: CSS Grid, Flexbox, Responsive Design
 
-## 项目结构
+## Project Structure
 
 ```
 tierboard/
-├── index.html          # 主页面
-├── script.js           # 前端逻辑
-├── styles.css          # 样式文件
-├── proxy_server.js     # 代理服务器
-├── package.json        # 项目配置
-├── .env.example        # 环境变量模板
-├── .gitignore          # Git忽略文件
-└── README.md           # 项目说明
+├── index.html          # Main page
+├── script.js           # Frontend logic
+├── styles.css          # Style files
+├── proxy_server.js     # Proxy server
+├── package.json        # Project configuration
+├── .env.example        # Environment variables template
+├── .gitignore          # Git ignore file
+└── README.md           # Project documentation
 ```
 
-## 安全说明
+## Security Notes
 
-- `.env` 文件包含敏感信息，已添加到 `.gitignore`
-- 请勿将真实的API密钥提交到版本控制系统
-- 在生产环境中使用环境变量管理敏感信息
+- `.env` file contains sensitive information and is added to `.gitignore`
+- Do not commit real API keys to version control
+- Use environment variables to manage sensitive information in production
 
-## 许可证
+## License
 
 MIT License
