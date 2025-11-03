@@ -32,7 +32,44 @@ document.addEventListener('DOMContentLoaded', function() {
     setupEventListeners();
     // 确保在数据加载后再渲染分级行
     renderTierRows();
+    // 确保未分级区域的按钮显示
+    ensureUnassignedButton();
 });
+
+// 确保未分级区域按钮显示
+function ensureUnassignedButton() {
+    const unassignedGrid = document.getElementById('unassignedGrid');
+    if (!unassignedGrid) {
+        console.error('unassignedGrid not found');
+        return;
+    }
+    
+    // 确保添加按钮存在
+    let addBtn = unassignedGrid.querySelector('.add-image-btn');
+    if (!addBtn) {
+        addBtn = document.createElement('div');
+        addBtn.className = 'add-image-btn';
+        addBtn.onclick = openImageUpload;
+        addBtn.title = '点击上传图片';
+        addBtn.textContent = '+';
+        unassignedGrid.appendChild(addBtn);
+    }
+    addBtn.style.display = 'flex';
+    addBtn.style.visibility = 'visible';
+    addBtn.style.opacity = '1';
+    
+    // 确保drop-zone存在（如果没有图片）
+    if (!tierData.unassigned || tierData.unassigned.length === 0) {
+        let dropZone = unassignedGrid.querySelector('.drop-zone');
+        if (!dropZone) {
+            dropZone = document.createElement('div');
+            dropZone.className = 'drop-zone';
+            dropZone.textContent = '拖拽图片到这里开始分级，或点击+号上传图片';
+            unassignedGrid.appendChild(dropZone);
+        }
+        dropZone.style.display = 'flex';
+    }
+}
 
 // 渲染分级行
 function renderTierRows() {
@@ -184,9 +221,20 @@ function createTierItem(imageData, tier) {
         const unassignedGrid = document.getElementById('unassignedGrid');
         const dropZone = unassignedGrid.querySelector('.drop-zone');
         if (dropZone) {
-            dropZone.remove();
+            dropZone.style.display = 'none';
         }
-        unassignedGrid.appendChild(item);
+        // 确保添加按钮存在
+        let addBtn = unassignedGrid.querySelector('.add-image-btn');
+        if (!addBtn) {
+            addBtn = document.createElement('div');
+            addBtn.className = 'add-image-btn';
+            addBtn.onclick = openImageUpload;
+            addBtn.title = '点击上传图片';
+            addBtn.textContent = '+';
+            unassignedGrid.appendChild(addBtn);
+        }
+        // 将新图片插入到添加按钮之前
+        unassignedGrid.insertBefore(item, addBtn);
     } else {
         const tierContent = document.querySelector(`[data-tier="${tier}"] .tier-content`);
         // 新图片添加到最前面，虚拟按钮保持在最后
@@ -205,11 +253,208 @@ function handleDragStart(event) {
     event.dataTransfer.setData('text/plain', event.target.dataset.id);
     event.target.classList.add('dragging');
     console.log('拖拽开始:', event.target.dataset.id); // 调试用
+    
+    // 允许在拖拽时使用滚轮滚动页面
+    enableDragScrolling();
 }
 
 // 拖拽结束
 function handleDragEnd(event) {
     event.target.classList.remove('dragging');
+    
+    // 禁用拖拽时的滚动支持
+    disableDragScrolling();
+}
+
+// 启用拖拽时的滚动
+let dragScrollHandler = null;
+let dragMouseMoveHandler = null;
+let autoScrollInterval = null;
+let isDragging = false;
+let wheelHandler = null;
+
+function enableDragScrolling() {
+    if (isDragging) return; // 已经启用
+    
+    isDragging = true;
+    console.log('启用拖拽滚动支持');
+    
+    // 监听鼠标移动，实现边缘自动滚动
+    dragMouseMoveHandler = function(e) {
+        handleDragAutoScroll(e);
+    };
+    
+    // 监听 dragover 事件用于边缘滚动
+    document.addEventListener('dragover', dragMouseMoveHandler);
+    
+    // 手动处理滚轮事件，确保在拖拽时可以滚动
+    // 使用多个事件名称以确保兼容性
+    wheelHandler = function(e) {
+        // 检查是否在拖拽状态（通过检查是否有拖拽的元素）
+        if (!isDragging) {
+            return;
+        }
+        
+        // 获取滚轮增量
+        let deltaY = 0;
+        let deltaX = 0;
+        
+        if (e.deltaY !== undefined) {
+            deltaY = e.deltaY;
+            deltaX = e.deltaX || 0;
+        } else if (e.wheelDeltaY !== undefined) {
+            // 旧版浏览器（IE/旧版Safari）
+            deltaY = -e.wheelDeltaY / 3;
+            deltaX = -(e.wheelDeltaX || 0) / 3;
+        } else if (e.detail !== undefined) {
+            // Firefox
+            deltaY = -e.detail * 10;
+        }
+        
+        // 如果确实有滚动量，手动滚动
+        if (Math.abs(deltaY) > 0 || Math.abs(deltaX) > 0) {
+            // 立即滚动 - 使用多种方法确保滚动生效
+            try {
+                // 方法1：使用 scrollBy
+                window.scrollBy(deltaX, deltaY);
+                
+                // 方法2：也尝试直接设置 scrollTop/scrollLeft
+                if (Math.abs(deltaY) > 0) {
+                    const currentTop = window.pageYOffset || window.scrollY || document.documentElement.scrollTop;
+                    window.scrollTo(window.pageXOffset || window.scrollX, currentTop + deltaY);
+                }
+                if (Math.abs(deltaX) > 0) {
+                    const currentLeft = window.pageXOffset || window.scrollX || document.documentElement.scrollLeft;
+                    window.scrollTo(currentLeft + deltaX, window.pageYOffset || window.scrollY);
+                }
+            } catch (err) {
+                console.error('滚动错误:', err);
+            }
+        }
+    };
+    
+    // 在多个目标上添加监听器，使用捕获阶段确保最先处理
+    // 使用 passive: false 以便我们可以控制事件
+    const options = { capture: true, passive: false };
+    
+    // 在 document 和 window 上同时监听 - 使用 passive: false 以便完全控制
+    // 注意：使用 passive: false 虽然可能影响性能，但能确保我们可以处理事件
+    document.addEventListener('wheel', wheelHandler, options);
+    window.addEventListener('wheel', wheelHandler, options);
+    if (document.body) {
+        document.body.addEventListener('wheel', wheelHandler, options);
+    }
+    
+    // 也监听 mousewheel 事件（旧浏览器支持）
+    document.addEventListener('mousewheel', wheelHandler, options);
+    window.addEventListener('mousewheel', wheelHandler, options);
+    
+    // Firefox 的 DOMMouseScroll 事件
+    document.addEventListener('DOMMouseScroll', wheelHandler, options);
+    
+    dragScrollHandler = wheelHandler; // 保存引用以便清理
+}
+
+// 禁用拖拽时的滚动
+function disableDragScrolling() {
+    if (!isDragging) return;
+    
+    console.log('禁用拖拽滚动支持');
+    isDragging = false;
+    
+    const options = { capture: true };
+    
+    // 移除所有滚轮事件监听器
+    if (wheelHandler) {
+        document.removeEventListener('wheel', wheelHandler, options);
+        window.removeEventListener('wheel', wheelHandler, options);
+        if (document.body) {
+            document.body.removeEventListener('wheel', wheelHandler, options);
+        }
+        document.removeEventListener('mousewheel', wheelHandler, options);
+        window.removeEventListener('mousewheel', wheelHandler, options);
+        document.removeEventListener('DOMMouseScroll', wheelHandler, options);
+        wheelHandler = null;
+        dragScrollHandler = null;
+    }
+    
+    if (dragMouseMoveHandler) {
+        document.removeEventListener('dragover', dragMouseMoveHandler);
+        dragMouseMoveHandler = null;
+    }
+    
+    // 停止自动滚动
+    if (autoScrollInterval) {
+        clearInterval(autoScrollInterval);
+        autoScrollInterval = null;
+    }
+    
+    // 重置滚动速度
+    currentScrollX = 0;
+    currentScrollY = 0;
+}
+
+// 拖拽时边缘自动滚动
+let currentScrollX = 0;
+let currentScrollY = 0;
+
+function handleDragAutoScroll(e) {
+    const scrollThreshold = 50; // 距离边缘多少像素时开始滚动
+    const baseScrollSpeed = 8; // 基础滚动速度
+    
+    const mouseY = e.clientY;
+    const mouseX = e.clientX;
+    const windowHeight = window.innerHeight;
+    const windowWidth = window.innerWidth;
+    
+    // 计算滚动方向和速度
+    let scrollX = 0;
+    let scrollY = 0;
+    
+    // 检查垂直方向
+    if (mouseY < scrollThreshold) {
+        // 向上滚动，距离边缘越近滚动越快
+        const factor = (scrollThreshold - mouseY) / scrollThreshold;
+        scrollY = -baseScrollSpeed * (1 + factor * 2);
+    } else if (mouseY > windowHeight - scrollThreshold) {
+        // 向下滚动
+        const factor = (mouseY - (windowHeight - scrollThreshold)) / scrollThreshold;
+        scrollY = baseScrollSpeed * (1 + factor * 2);
+    }
+    
+    // 检查水平方向
+    if (mouseX < scrollThreshold) {
+        // 向左滚动
+        const factor = (scrollThreshold - mouseX) / scrollThreshold;
+        scrollX = -baseScrollSpeed * (1 + factor * 2);
+    } else if (mouseX > windowWidth - scrollThreshold) {
+        // 向右滚动
+        const factor = (mouseX - (windowWidth - scrollThreshold)) / scrollThreshold;
+        scrollX = baseScrollSpeed * (1 + factor * 2);
+    }
+    
+    // 更新滚动速度
+    currentScrollX = scrollX;
+    currentScrollY = scrollY;
+    
+    // 如果之前没有滚动间隔，创建新的
+    if (!autoScrollInterval && (scrollX !== 0 || scrollY !== 0)) {
+        autoScrollInterval = setInterval(() => {
+            if (currentScrollX !== 0 || currentScrollY !== 0) {
+                window.scrollBy(currentScrollX, currentScrollY);
+            } else {
+                // 如果不再需要滚动，停止
+                if (autoScrollInterval) {
+                    clearInterval(autoScrollInterval);
+                    autoScrollInterval = null;
+                }
+            }
+        }, 16);
+    } else if (autoScrollInterval && scrollX === 0 && scrollY === 0) {
+        // 如果不再需要滚动，停止
+        clearInterval(autoScrollInterval);
+        autoScrollInterval = null;
+    }
 }
 
 // 允许放置
@@ -402,10 +647,25 @@ function removeItem(itemId) {
     // 如果未分级区域为空，显示提示
     if (tier === 'unassigned' && tierData.unassigned.length === 0) {
         const unassignedGrid = document.getElementById('unassignedGrid');
-        unassignedGrid.innerHTML = `
-            <div class="add-image-btn" onclick="openImageUpload()" title="点击上传图片">+</div>
-            <div class="drop-zone">拖拽图片到这里开始分级，或点击+号上传图片</div>
-        `;
+        // 确保添加按钮存在
+        let addBtn = unassignedGrid.querySelector('.add-image-btn');
+        if (!addBtn) {
+            addBtn = document.createElement('div');
+            addBtn.className = 'add-image-btn';
+            addBtn.onclick = openImageUpload;
+            addBtn.title = '点击上传图片';
+            addBtn.textContent = '+';
+            unassignedGrid.appendChild(addBtn);
+        }
+        // 显示drop-zone
+        let dropZone = unassignedGrid.querySelector('.drop-zone');
+        if (!dropZone) {
+            dropZone = document.createElement('div');
+            dropZone.className = 'drop-zone';
+            dropZone.textContent = '拖拽图片到这里开始分级，或点击+号上传图片';
+            unassignedGrid.appendChild(dropZone);
+        }
+        dropZone.style.display = 'flex';
     }
     
     updateFileCount();
@@ -575,10 +835,30 @@ function clearAll() {
         });
         
         const unassignedGrid = document.getElementById('unassignedGrid');
-        unassignedGrid.innerHTML = `
-            <div class="add-image-btn" onclick="openImageUpload()" title="点击上传图片">+</div>
-            <div class="drop-zone">拖拽图片到这里开始分级，或点击+号上传图片</div>
-        `;
+        // 只移除图片项目
+        const existingItems = unassignedGrid.querySelectorAll('.tier-item');
+        existingItems.forEach(item => item.remove());
+        
+        // 确保添加按钮存在
+        let addBtn = unassignedGrid.querySelector('.add-image-btn');
+        if (!addBtn) {
+            addBtn = document.createElement('div');
+            addBtn.className = 'add-image-btn';
+            addBtn.onclick = openImageUpload;
+            addBtn.title = '点击上传图片';
+            addBtn.textContent = '+';
+            unassignedGrid.appendChild(addBtn);
+        }
+        
+        // 确保drop-zone存在并显示
+        let dropZone = unassignedGrid.querySelector('.drop-zone');
+        if (!dropZone) {
+            dropZone = document.createElement('div');
+            dropZone.className = 'drop-zone';
+            dropZone.textContent = '拖拽图片到这里开始分级，或点击+号上传图片';
+            unassignedGrid.appendChild(dropZone);
+        }
+        dropZone.style.display = 'flex';
         
         // 确保虚拟按钮存在
         setTimeout(checkVirtualButtons, 50);
@@ -676,7 +956,14 @@ function renderTierData() {
     });
     
     const unassignedGrid = document.getElementById('unassignedGrid');
-    unassignedGrid.innerHTML = '';
+    if (!unassignedGrid) {
+        console.error('unassignedGrid not found');
+        return;
+    }
+    
+    // 只清空图片项目，保留或创建添加按钮和drop-zone
+    const existingItems = unassignedGrid.querySelectorAll('.tier-item');
+    existingItems.forEach(item => item.remove());
     
     // 渲染各个等级 - 按时间顺序渲染，最新的在前面
     Object.keys(tierData).forEach(tier => {
@@ -689,17 +976,39 @@ function renderTierData() {
         }
     });
     
-    // 如果未分级区域为空，显示提示
-    if (tierData.unassigned.length === 0) {
-        unassignedGrid.innerHTML = `
-            <div class="add-image-btn" onclick="openImageUpload()" title="点击上传图片">+</div>
-            <div class="drop-zone">拖拽图片到这里开始分级，或点击+号上传图片</div>
-        `;
+    // 确保未分级区域有添加按钮
+    let addBtn = unassignedGrid.querySelector('.add-image-btn');
+    if (!addBtn) {
+        addBtn = document.createElement('div');
+        addBtn.className = 'add-image-btn';
+        addBtn.onclick = openImageUpload;
+        addBtn.title = '点击上传图片';
+        addBtn.textContent = '+';
+    }
+    
+    // 确保drop-zone存在
+    let dropZone = unassignedGrid.querySelector('.drop-zone');
+    if (!dropZone) {
+        dropZone = document.createElement('div');
+        dropZone.className = 'drop-zone';
+        dropZone.textContent = '拖拽图片到这里开始分级，或点击+号上传图片';
+    }
+    
+    // 根据是否有图片决定显示
+    if (tierData.unassigned && tierData.unassigned.length > 0) {
+        // 有图片：隐藏drop-zone，显示添加按钮（在最后）
+        dropZone.style.display = 'none';
+        if (!unassignedGrid.contains(addBtn)) {
+            unassignedGrid.appendChild(addBtn);
+        }
     } else {
-        // 如果有图片，隐藏drop-zone
-        const dropZone = unassignedGrid.querySelector('.drop-zone');
-        if (dropZone) {
-            dropZone.style.display = 'none';
+        // 无图片：显示drop-zone和添加按钮
+        dropZone.style.display = 'flex';
+        if (!unassignedGrid.contains(addBtn)) {
+            unassignedGrid.insertBefore(addBtn, dropZone);
+        }
+        if (!unassignedGrid.contains(dropZone)) {
+            unassignedGrid.appendChild(dropZone);
         }
     }
     

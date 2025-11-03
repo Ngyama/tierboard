@@ -12,7 +12,7 @@ body {
 }
 
 .container {
-    max-width: 1200px;
+    max-width: 1800px;
     margin: 0 auto;
     background: white;
     border-radius: 12px;
@@ -103,7 +103,7 @@ body {
 .tier-row {
     display: flex;
     margin-bottom: 8px;
-    min-height: 160px;
+    min-height: 180px;
     border-radius: 8px;
     overflow: hidden;
     box-shadow: 0 2px 8px rgba(0,0,0,0.06);
@@ -138,15 +138,15 @@ body {
     background: white;
     display: flex;
     align-items: center;
-    padding: 12px;
+    padding: 8px;
     gap: 12px;
     flex-wrap: wrap;
-    min-height: 160px;
+    min-height: 180px;
 }
 
 .tier-item {
-    width: 100px;
-    height: 133px;
+    width: 120px;
+    height: 160px;
     border-radius: 6px;
     overflow: hidden;
     cursor: grab;
@@ -225,7 +225,7 @@ body {
 
 .unassigned-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
     gap: 12px;
     padding: 20px;
     background: #f8f9fa;
@@ -264,8 +264,8 @@ body {
 }
 
 .add-image-btn {
-    width: 100px;
-    height: 133px;
+    width: 120px;
+    height: 160px;
     border: 2px dashed #d0d0d0;
     border-radius: 6px;
     display: flex !important;
@@ -276,10 +276,11 @@ body {
     background: #fafbfc;
     color: #999;
     font-size: 24px;
-    margin-right: 12px;
     position: relative;
     z-index: 10;
     flex-shrink: 0;
+    visibility: visible !important;
+    opacity: 1 !important;
 }
 
 .add-image-btn:hover {
