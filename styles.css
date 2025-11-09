@@ -117,13 +117,43 @@ body {
 }
 
 .tier-label {
-    width: 80px;
+    width: 150px;
     display: flex;
     align-items: center;
     justify-content: center;
     font-weight: 600;
     font-size: 1.2rem;
     text-shadow: none;
+    position: relative;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.tier-label:hover {
+    opacity: 0.9;
+}
+
+.tier-label .tier-name {
+    padding: 0 10px;
+    word-break: break-word;
+    text-align: center;
+    min-width: 0;
+    flex: 1;
+}
+
+.tier-label input.tier-name-input {
+    width: 100%;
+    height: 100%;
+    border: 2px solid rgba(0, 0, 0, 0.3);
+    border-radius: 4px;
+    padding: 0 10px;
+    font-size: 1.2rem;
+    font-weight: 600;
+    text-align: center;
+    background: white;
+    color: #333;
+    outline: none;
+    box-sizing: border-box;
 }
 
 .tier-s { background: #ffb3d9; color: #333; }
@@ -142,6 +172,31 @@ body {
     gap: 12px;
     flex-wrap: wrap;
     min-height: 180px;
+}
+
+/* 分级内容区域的淡色背景 */
+[data-tier="s"] .tier-content {
+    background: rgba(255, 179, 217, 0.15); /* S级淡粉色 */
+}
+
+[data-tier="a"] .tier-content {
+    background: rgba(240, 230, 140, 0.15); /* A级淡黄色 */
+}
+
+[data-tier="b"] .tier-content {
+    background: rgba(152, 251, 152, 0.15); /* B级淡绿色 */
+}
+
+[data-tier="c"] .tier-content {
+    background: rgba(135, 206, 235, 0.15); /* C级淡蓝色 */
+}
+
+[data-tier="d"] .tier-content {
+    background: rgba(221, 160, 221, 0.15); /* D级淡紫色 */
+}
+
+[data-tier="f"] .tier-content {
+    background: rgba(255, 182, 193, 0.15); /* F级淡粉红色 */
 }
 
 .tier-item {
@@ -314,8 +369,18 @@ body {
     }
     
     .tier-label {
-        width: 60px;
+        width: 100px;
         font-size: 1rem;
+    }
+    
+    .tier-label .tier-name {
+        padding: 0 5px;
+        font-size: 0.9rem;
+    }
+    
+    .tier-label input.tier-name-input {
+        font-size: 0.9rem;
+        padding: 0 5px;
     }
     
     .tier-item {

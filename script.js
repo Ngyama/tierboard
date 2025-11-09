@@ -71,6 +71,19 @@ function ensureUnassignedButton() {
     }
 }
 
+// 将十六进制颜色转换为淡色 rgba
+function hexToLightRgba(hex, opacity = 0.15) {
+    // 移除 # 号
+    hex = hex.replace('#', '');
+    
+    // 转换为 RGB
+    const r = parseInt(hex.substring(0, 2), 16);
+    const g = parseInt(hex.substring(2, 4), 16);
+    const b = parseInt(hex.substring(4, 6), 16);
+    
+    return `rgba(${r}, ${g}, ${b}, ${opacity})`;
+}
+
 // 渲染分级行
 function renderTierRows() {
     const container = document.getElementById('tierContainer');
@@ -86,11 +99,14 @@ function renderTierRows() {
         tierRow.className = 'tier-row';
         tierRow.dataset.tier = tier.id;
         
+        // 计算淡色背景
+        const lightBgColor = hexToLightRgba(tier.color, 0.15);
+        
         tierRow.innerHTML = `
             <div class="tier-label" style="background: ${tier.color};" onclick="editTierName('${tier.id}')" title="点击编辑分级名称">
                 <span class="tier-name">${tier.name}</span>
             </div>
-            <div class="tier-content" ondrop="drop(event)" ondragover="allowDrop(event)" ondragleave="handleTierDragLeave(event)">
+            <div class="tier-content" style="background: ${lightBgColor};" ondrop="drop(event)" ondragover="allowDrop(event)" ondragleave="handleTierDragLeave(event)">
                 <div class="add-image-btn" onclick="openImageSelector('${tier.id}')" title="点击添加图片到${tier.name}级">+</div>
             </div>
         `;
@@ -705,13 +721,78 @@ function editTierName(tierId) {
     const tier = tierConfig.find(t => t.id === tierId);
     if (!tier) return;
     
-    const newName = prompt('请输入新的分级名称:', tier.name);
-    if (newName && newName.trim() && newName !== tier.name) {
-        tier.name = newName.trim();
-        renderTierRows();
-        renderTierData();
-        saveToLocalStorage();
+    // 找到对应的分级标签元素
+    const tierRow = document.querySelector(`[data-tier="${tierId}"]`);
+    if (!tierRow) return;
+    
+    const tierLabel = tierRow.querySelector('.tier-label');
+    const tierNameSpan = tierLabel.querySelector('.tier-name');
+    
+    // 如果已经在编辑状态，不重复创建
+    if (tierLabel.querySelector('.tier-name-input')) {
+        return;
     }
+    
+    // 保存原始名称
+    const originalName = tier.name;
+    
+    // 创建输入框
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'tier-name-input';
+    input.value = tier.name;
+    input.maxLength = 20;
+    
+    // 替换显示文本为输入框
+    tierNameSpan.style.display = 'none';
+    tierLabel.insertBefore(input, tierNameSpan);
+    input.focus();
+    input.select();
+    
+    // 保存函数
+    const saveName = () => {
+        const newName = input.value.trim();
+        if (newName && newName !== originalName) {
+            tier.name = newName;
+            renderTierRows();
+            renderTierData();
+            saveToLocalStorage();
+        } else {
+            // 如果取消或名称未变，恢复显示
+            tierNameSpan.style.display = '';
+            input.remove();
+        }
+    };
+    
+    // 取消函数
+    const cancelEdit = () => {
+        tierNameSpan.style.display = '';
+        input.remove();
+    };
+    
+    // 按 Enter 保存
+    input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            saveName();
+        } else if (e.key === 'Escape') {
+            e.preventDefault();
+            cancelEdit();
+        }
+    });
+    
+    // 失去焦点时保存
+    input.addEventListener('blur', () => {
+        // 延迟执行，以便点击其他元素时能正常处理
+        setTimeout(() => {
+            saveName();
+        }, 200);
+    });
+    
+    // 阻止点击事件冒泡，避免触发其他操作
+    input.addEventListener('click', (e) => {
+        e.stopPropagation();
+    });
 }
 
 // 打开分级管理器
