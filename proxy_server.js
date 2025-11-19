@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const fetch = require('node-fetch');
 const path = require('path');
+const fs = require('fs');
 require('dotenv').config();
 
 const app = express();
@@ -10,7 +11,6 @@ const PORT = 3000;
 // 启用CORS
 app.use(cors());
 app.use(express.json());
-app.use(express.static('.'));
 
 // IGDB API代理端点
 app.post('/api/igdb/games', async (req, res) => {
@@ -134,7 +134,12 @@ app.post('/api/google/books', async (req, res) => {
     }
 });
 
-app.listen(PORT, () => {
-    console.log(`代理服务器运行在 http://localhost:${PORT}`);
-    console.log('请在浏览器中访问: http://localhost:3000');
-});
+const distPath = path.join(__dirname, 'dist');
+if (fs.existsSync(distPath)) {
+    app.use(express.static(distPath));
+    app.get('*', (req, res) => {
+        res.sendFile(path.join(distPath, 'index.html'));
+    });
+}
+
+app.listen(PORT);
