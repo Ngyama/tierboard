@@ -29,7 +29,7 @@ cp .env.example .env   # add IGDB & Google Books credentials
 | `npm run preview` | Preview build with Vite                   |
 | `npm start`       | Production proxy serving `/api/*` + dist  |
 
-Development entry: http://localhost:5173 (proxy on http://localhost:3000).
+Development entry: http://localhost:5173
 
 ## Structure
 

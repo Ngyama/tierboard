@@ -108,6 +108,58 @@ body {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
   border: 1px solid rgba(0, 0, 0, 0.05);
   position: relative;
+  transition: all 0.2s ease;
+}
+
+.tier-row.dragging-tier {
+  opacity: 0.6;
+  transform: scale(0.98);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.tier-row.drag-over-tier {
+  border-top: 3px solid #87ceeb;
+  margin-top: 4px;
+}
+
+.tier-drag-handle {
+  width: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.03);
+  cursor: grab;
+  user-select: none;
+  transition: background 0.2s ease;
+  flex-shrink: 0;
+}
+
+.tier-drag-handle:hover {
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.tier-drag-handle:active {
+  cursor: grabbing;
+}
+
+.tier-drag-handle .drag-dots {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  align-items: center;
+}
+
+.tier-drag-handle .drag-dots span {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #999;
+  display: block;
+  transition: background 0.2s ease;
+}
+
+.tier-drag-handle:hover .drag-dots span {
+  background: #666;
 }
 
 .tier-label {
@@ -135,7 +187,6 @@ body {
 
 .tier-content {
   flex: 1;
-  background: white;
   display: flex;
   align-items: center;
   padding: 8px;
@@ -143,30 +194,6 @@ body {
   flex-wrap: wrap;
   min-height: 180px;
   position: relative;
-}
-
-[data-tier='s'] .tier-content {
-  background: rgba(255, 179, 217, 0.15);
-}
-
-[data-tier='a'] .tier-content {
-  background: rgba(240, 230, 140, 0.15);
-}
-
-[data-tier='b'] .tier-content {
-  background: rgba(152, 251, 152, 0.15);
-}
-
-[data-tier='c'] .tier-content {
-  background: rgba(135, 206, 235, 0.15);
-}
-
-[data-tier='d'] .tier-content {
-  background: rgba(221, 160, 221, 0.15);
-}
-
-[data-tier='f'] .tier-content {
-  background: rgba(255, 182, 193, 0.15);
 }
 
 .tier-item {
@@ -349,6 +376,33 @@ body {
   align-items: center;
 }
 
+.modal-header .close {
+  background: transparent;
+  border: none;
+  color: #666;
+  font-size: 24px;
+  font-weight: 300;
+  cursor: pointer;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  padding: 0;
+  line-height: 1;
+}
+
+.modal-header .close:hover {
+  background: rgba(0, 0, 0, 0.05);
+  color: #333;
+}
+
+.modal-header .close:active {
+  background: rgba(0, 0, 0, 0.1);
+}
+
 .modal-body {
   padding: 30px;
   overflow-y: auto;
@@ -359,9 +413,30 @@ body {
   align-items: center;
   gap: 15px;
   padding: 15px;
-  background: #f8f9fa;
   border-radius: 8px;
   margin-bottom: 10px;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  transition: all 0.2s ease;
+}
+
+.tier-manager-item .tier-color-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  border: 2px solid rgba(255, 255, 255, 0.8);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+  padding: 0;
+}
+
+.tier-manager-item .tier-color-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.tier-manager-item .tier-color-btn:active {
+  transform: scale(0.98);
 }
 
 .tier-manager-item input {
@@ -371,6 +446,42 @@ body {
   border-radius: 6px;
   font-size: 1rem;
   text-align: center;
+}
+
+.tier-manager-item .delete-btn {
+  background: #ff6b6b;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 0;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  height: 32px;
+}
+
+.tier-manager-item .delete-btn:hover:not(:disabled) {
+  background: #ff5252;
+}
+
+.tier-manager-item .delete-btn:active:not(:disabled) {
+  background: #e53935;
+}
+
+.tier-manager-item .delete-btn:disabled {
+  background: #e0e0e0;
+  color: #b0b0b0;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.tier-manager-item .delete-btn .delete-icon {
+  font-size: 1.5rem;
+  line-height: 1;
+  font-weight: 300;
 }
 
 .search-sidebar {
@@ -563,5 +674,11 @@ body {
   .search-sidebar {
     width: 100%;
   }
+}
+
+/* 导出时隐藏拖拽手柄和加号按钮 */
+body.exporting .tier-drag-handle,
+body.exporting .add-image-btn {
+  display: none !important;
 }
 

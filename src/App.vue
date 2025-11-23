@@ -24,7 +24,23 @@
         :key="tier.id"
         class="tier-row"
         :data-tier="tier.id"
+        @dragover.prevent="handleTierRowDragOver($event, tier.id)"
+        @dragleave="handleTierRowDragLeave($event)"
+        @drop.prevent="handleTierRowDrop($event, tier.id)"
       >
+        <div
+          class="tier-drag-handle"
+          title="拖动调整分级顺序"
+          draggable="true"
+          @dragstart="handleTierRowDragStart(tier.id, $event)"
+          @dragend="handleTierRowDragEnd"
+        >
+          <div class="drag-dots">
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+        </div>
         <div
           class="tier-label"
           :style="{ background: tier.color }"
@@ -45,6 +61,7 @@
         <div
           class="tier-content"
           :class="{ 'drag-over': dragOverTier === tier.id }"
+          :style="{ background: hexToLightRgba(tier.color, 0.15) }"
           @dragover.prevent="handleTierDragOver($event, tier.id)"
           @dragleave="handleTierDragLeave($event, tier.id)"
           @drop.prevent="handleTierDrop($event, tier.id)"
@@ -147,9 +164,12 @@
               v-for="tier in tierConfig"
               :key="tier.id"
               class="tier-manager-item"
+              :style="{
+                background: tier.color ? hexToLightRgba(tier.color, 0.15) : 'rgba(0, 0, 0, 0.15)'
+              }"
             >
-              <div
-                class="tier-color"
+              <button
+                class="tier-color-btn"
                 :style="{ background: tier.color }"
                 title="点击更换颜色"
                 @click="changeTierColor(tier.id)"
@@ -163,8 +183,9 @@
                 class="delete-btn"
                 :disabled="tierConfig.length <= 1"
                 @click="deleteTier(tier.id)"
+                title="删除此分级"
               >
-                删除
+                <span class="delete-icon">×</span>
               </button>
             </div>
           </div>
@@ -316,6 +337,11 @@ const dragState = reactive({
   fromTier: ''
 });
 
+const tierRowDragState = reactive({
+  draggingTierId: '',
+  dragOverTierId: ''
+});
+
 const dragIndicator = reactive({
   visible: false,
   tierId: '',
@@ -396,6 +422,32 @@ function initializeState() {
 
 function deepClone(value) {
   return JSON.parse(JSON.stringify(value));
+}
+
+function hexToLightRgba(hex, opacity = 0.15) {
+  if (!hex) return `rgba(0, 0, 0, ${opacity})`;
+  const colorStr = String(hex).trim();
+  let hexValue = colorStr.replace('#', '');
+  
+  if (hexValue.length !== 6) return `rgba(0, 0, 0, ${opacity})`;
+  
+  const r = parseInt(hexValue.substring(0, 2), 16);
+  const g = parseInt(hexValue.substring(2, 4), 16);
+  const b = parseInt(hexValue.substring(4, 6), 16);
+  
+  if (isNaN(r) || isNaN(g) || isNaN(b)) return `rgba(0, 0, 0, ${opacity})`;
+  
+  return `rgba(${r}, ${g}, ${b}, ${opacity})`;
+}
+
+function getTierBackgroundColor(color) {
+  return hexToLightRgba(color, 0.15);
+}
+
+function getTierItemStyle(tier) {
+  return {
+    backgroundColor: hexToLightRgba(tier.color, 0.15)
+  };
 }
 
 function getEmptyTierData(config) {
@@ -617,6 +669,58 @@ function removeItem(tierId, itemId) {
   }
 }
 
+function handleTierRowDragStart(tierId, event) {
+  tierRowDragState.draggingTierId = tierId;
+  event.dataTransfer.effectAllowed = 'move';
+  event.dataTransfer.setData('text/plain', tierId);
+  // 找到父级 tier-row 并添加拖拽样式
+  const tierRow = event.currentTarget.closest('.tier-row');
+  if (tierRow) {
+    tierRow.classList.add('dragging-tier');
+  }
+}
+
+function handleTierRowDragOver(event, tierId) {
+  if (tierRowDragState.draggingTierId && tierRowDragState.draggingTierId !== tierId) {
+    tierRowDragState.dragOverTierId = tierId;
+    event.currentTarget.classList.add('drag-over-tier');
+  }
+}
+
+function handleTierRowDragLeave(event) {
+  if (!event.currentTarget.contains(event.relatedTarget)) {
+    event.currentTarget.classList.remove('drag-over-tier');
+    tierRowDragState.dragOverTierId = '';
+  }
+}
+
+function handleTierRowDrop(event, targetTierId) {
+  event.currentTarget.classList.remove('drag-over-tier');
+  if (!tierRowDragState.draggingTierId || tierRowDragState.draggingTierId === targetTierId) {
+    return;
+  }
+  
+  const fromIndex = tierConfig.value.findIndex((t) => t.id === tierRowDragState.draggingTierId);
+  const toIndex = tierConfig.value.findIndex((t) => t.id === targetTierId);
+  
+  if (fromIndex === -1 || toIndex === -1) return;
+  
+  const [movedTier] = tierConfig.value.splice(fromIndex, 1);
+  tierConfig.value.splice(toIndex, 0, movedTier);
+}
+
+function handleTierRowDragEnd(event) {
+  // 移除所有拖拽样式
+  document.querySelectorAll('.dragging-tier').forEach((el) => {
+    el.classList.remove('dragging-tier');
+  });
+  document.querySelectorAll('.drag-over-tier').forEach((el) => {
+    el.classList.remove('drag-over-tier');
+  });
+  tierRowDragState.draggingTierId = '';
+  tierRowDragState.dragOverTierId = '';
+}
+
 function clearAll() {
   if (!window.confirm('确定要清空所有图片吗？')) return;
   Object.keys(tierData).forEach((key) => {
@@ -626,15 +730,24 @@ function clearAll() {
 
 async function exportTierList() {
   if (!tierContainerRef.value) return;
-  const canvas = await html2canvas(tierContainerRef.value, {
-    backgroundColor: '#ffffff',
-    scale: 2,
-    useCORS: true
-  });
-  const link = document.createElement('a');
-  link.download = 'tier-list.png';
-  link.href = canvas.toDataURL();
-  link.click();
+  
+  // 添加导出类来隐藏拖拽手柄和加号按钮
+  document.body.classList.add('exporting');
+  
+  try {
+    const canvas = await html2canvas(tierContainerRef.value, {
+      backgroundColor: '#ffffff',
+      scale: 2,
+      useCORS: true
+    });
+    const link = document.createElement('a');
+    link.download = 'tier-list.png';
+    link.href = canvas.toDataURL();
+    link.click();
+  } finally {
+    // 导出完成后移除类
+    document.body.classList.remove('exporting');
+  }
 }
 
 function openTierManager() {
@@ -691,12 +804,18 @@ function addNewTier() {
 
   const newId = `tier_${Date.now()}`;
   const color = colorPalette[Math.floor(Math.random() * colorPalette.length)];
-  tierConfig.value.push({
+  const newTier = {
     id: newId,
     name: trimmed,
-    color
-  });
+    color: color
+  };
+  tierConfig.value.push(newTier);
   tierData[newId] = [];
+  
+  // 确保 Vue 正确更新视图
+  nextTick(() => {
+    ensureTierBuckets();
+  });
 }
 
 function startTierNameEdit(tier) {
@@ -777,6 +896,8 @@ async function searchMedia() {
       results = await fetchGames(searchQuery.value);
     } else if (currentMediaType.value === 'books') {
       results = await fetchBooks(searchQuery.value);
+    } else if (currentMediaType.value === 'anime') {
+      results = await fetchAnime(searchQuery.value);
     } else {
       results = [];
     }
@@ -842,6 +963,35 @@ async function fetchBooks(query) {
       : '暂无描述',
     coverUrl: book.cover
       ? book.cover.replace('http://', 'https://')
+      : fallbackCover
+  }));
+}
+
+async function fetchAnime(query) {
+  const response = await fetch('/api/bangumi/anime', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      query,
+      limit: 20
+    })
+  });
+
+  if (!response.ok) {
+    throw new Error(`Bangumi API 请求失败: ${response.status}`);
+  }
+
+  const animeList = await response.json();
+  return animeList.map((anime) => ({
+    id: anime.id,
+    name: anime.name,
+    summary: anime.summary
+      ? `${anime.summary.slice(0, 100)}...`
+      : '暂无描述',
+    coverUrl: anime.cover
+      ? anime.cover.replace('http://', 'https://')
       : fallbackCover
   }));
 }
